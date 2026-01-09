@@ -1,3 +1,4 @@
+/*
 package com.aespa.armageddon.core.common.exception;
 
 import com.aespa.armageddon.core.common.response.ApiResult;
@@ -35,4 +36,4 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
-}
+}*/

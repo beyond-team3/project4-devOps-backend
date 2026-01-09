@@ -1,3 +1,4 @@
+/*
 package com.aespa.armageddon.core.common.exception;
 
 import com.aespa.armageddon.core.common.response.ApiResult;
@@ -74,3 +75,4 @@ public class GlobalExceptionHandler {
                 .body(ApiResult.error(ErrorCode.INTERNAL_SERVER_ERROR.getCode(), ErrorCode.INTERNAL_SERVER_ERROR.getMessage()));
     }
 }
+*/

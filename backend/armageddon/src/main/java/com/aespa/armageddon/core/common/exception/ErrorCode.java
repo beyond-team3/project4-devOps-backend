@@ -1,3 +1,4 @@
+/*
 package com.aespa.armageddon.core.common.exception;
 
 import lombok.Getter;
@@ -32,3 +33,4 @@ public enum ErrorCode {
     private final String code;
     private final String message;
 }
+*/

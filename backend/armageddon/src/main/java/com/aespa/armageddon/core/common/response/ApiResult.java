@@ -1,3 +1,4 @@
+/*
 package com.aespa.armageddon.core.common.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -47,4 +48,4 @@ public class ApiResult<T> {
         result.message = message;
         return result;
     }
-}
+}*/

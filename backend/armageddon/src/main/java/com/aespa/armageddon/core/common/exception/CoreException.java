@@ -1,3 +1,4 @@
+/*
 package com.aespa.armageddon.core.common.exception;
 
 import lombok.Getter;
@@ -17,3 +18,4 @@ public class CoreException extends RuntimeException {
         this.errorCode = errorCode;
     }
 }
+*/

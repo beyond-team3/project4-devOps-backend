@@ -1,3 +1,4 @@
+/*
 package com.aespa.armageddon.core.common.exception;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,4 +36,4 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
-}
+}*/
