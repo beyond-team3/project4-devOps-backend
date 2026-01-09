@@ -1,8 +1,7 @@
-package com.guincard.penghyunsuk.infra.config;
+package com.aespa.armageddon.infra.security;
 
-import com.guincard.penghyunsuk.core.support.error.RestAccessDeniedHandler;
-import com.guincard.penghyunsuk.core.support.error.RestAuthenticationEntryPoint;
-import com.guincard.penghyunsuk.infra.util.JwtTokenProvider;
+import com.aespa.armageddon.core.common.exception.RestAccessDeniedHandler;
+import com.aespa.armageddon.core.common.exception.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
