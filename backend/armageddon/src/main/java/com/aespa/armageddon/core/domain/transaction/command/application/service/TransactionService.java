@@ -2,6 +2,7 @@ package com.aespa.armageddon.core.domain.transaction.command.application.service
 
 import com.aespa.armageddon.core.domain.transaction.command.application.dto.request.TransactionWriteRequest;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.Transaction;
+import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.TransactionType;
 import com.aespa.armageddon.core.domain.transaction.command.domain.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -50,11 +51,15 @@ public class TransactionService {
         }
 
         if (request.type() == null) {
-            throw new IllegalArgumentException("거래 타입은 필수입니다.");
+            throw new IllegalArgumentException("지출/수입 타입은 필수입니다.");
         }
 
-        if (request.category() == null) {
-            throw new IllegalArgumentException("카테고리는 필수입니다.");
+        if (request.type() == TransactionType.EXPENSE && request.category() == null) {
+            throw new IllegalArgumentException("지출일 경우 카테고리는 필수입니다.");
+        }
+
+        if (request.type() == TransactionType.INCOME && request.category() != null) {
+            throw new IllegalArgumentException("수입에는 카테고리를 입력할 수 없습니다.");
         }
     }
 }
