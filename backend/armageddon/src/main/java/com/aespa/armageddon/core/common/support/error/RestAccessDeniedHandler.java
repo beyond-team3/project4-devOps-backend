@@ -1,6 +1,6 @@
-/*
-package com.aespa.armageddon.core.common.exception;
+package com.aespa.armageddon.core.common.support.error;
 
+import com.aespa.armageddon.core.common.support.response.ApiResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
-import com.aespa.armageddon.core.common.response.ApiResult;
 
 import java.io.IOException;
 
@@ -25,15 +24,10 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
             HttpServletResponse response,
             AccessDeniedException accessDeniedException
     ) throws IOException, ServletException {
-
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setStatus(ErrorType.ACCESS_DENIED.getStatus().value());
         response.setContentType("application/json;charset=UTF-8");
 
-        ApiResult<Void> errorResponse = ApiResult.error(
-                "A002",
-                "접근 권한이 없습니다."
-        );
-
+        ApiResult<?> errorResponse = ApiResult.error(ErrorType.ACCESS_DENIED);
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
-}*/
+}
