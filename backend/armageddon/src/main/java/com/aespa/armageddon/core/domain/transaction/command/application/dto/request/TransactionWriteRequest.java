@@ -8,7 +8,6 @@ import java.time.LocalDate;
 
 public record TransactionWriteRequest(
 
-        Long userNo,
         String title,
         String memo,
         int amount,
