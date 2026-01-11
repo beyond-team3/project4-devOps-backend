@@ -5,9 +5,8 @@ import com.aespa.armageddon.core.domain.auth.entity.User;
 import com.aespa.armageddon.core.domain.transaction.command.application.dto.request.TransactionEditRequest;
 import com.aespa.armageddon.core.domain.transaction.command.application.dto.request.TransactionWriteRequest;
 import com.aespa.armageddon.core.domain.transaction.command.application.service.TransactionService;
+import com.aespa.armageddon.infra.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,22 +15,28 @@ import org.springframework.web.bind.annotation.*;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/write")
     public ApiResult<?> writeTransaction(
+            @RequestHeader("Authorization") String authorization,
             @RequestBody TransactionWriteRequest request) {
-        String loginId = SecurityContextHolder.getContext().getAuthentication().getName();
-        transactionService.writeTransaction(loginId, request);
+
+        String token = authorization.substring(7);
+        Long userNo = jwtTokenProvider.getUserIdFromJWT(token);
+        transactionService.writeTransaction(userNo, request);
         return ApiResult.success();
     }
 
     @PutMapping("/edit/{transactionId}")
     public ApiResult<?> editTransaction(
+            @RequestHeader("Authorization") String authorization,
             @PathVariable Long transactionId,
             @RequestBody TransactionEditRequest request
     ) {
-        String loginId = SecurityContextHolder.getContext().getAuthentication().getName();
-        transactionService.editTransaction(loginId, transactionId, request);
+        String token = authorization.substring(7);
+        Long userNo = jwtTokenProvider.getUserIdFromJWT(token);
+        transactionService.editTransaction(userNo, transactionId, request);
         return ApiResult.success();
     }
 }
