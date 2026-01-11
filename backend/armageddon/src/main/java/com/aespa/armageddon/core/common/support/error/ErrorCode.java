@@ -18,5 +18,6 @@ public enum ErrorCode {
     A006,
     A007,
     A008,
-    E500
-}
+    E500,
+    T001
+    }
