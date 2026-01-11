@@ -90,5 +90,24 @@ public class Transaction {
             throw new IllegalArgumentException("수입일 경우 카테고리를 입력할 수 없습니다.");
         }
     }
+
+    public void edit(
+            String title,
+            String memo,
+            int amount,
+            LocalDate date,
+            TransactionType type,
+            Category category
+    ) {
+        this.title = title;
+        this.memo = memo;
+        this.amount = amount;
+        this.date = date;
+        this.type = type;
+        this.category = category;
+
+        validate();
+    }
+
 }
 
