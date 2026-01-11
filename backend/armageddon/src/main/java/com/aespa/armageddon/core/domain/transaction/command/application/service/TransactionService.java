@@ -2,14 +2,11 @@ package com.aespa.armageddon.core.domain.transaction.command.application.service
 
 import com.aespa.armageddon.core.common.support.error.CoreException;
 import com.aespa.armageddon.core.common.support.error.ErrorType;
-import com.aespa.armageddon.core.domain.auth.repository.UserRepository;
 import com.aespa.armageddon.core.domain.transaction.command.application.dto.request.TransactionEditRequest;
 import com.aespa.armageddon.core.domain.transaction.command.application.dto.request.TransactionWriteRequest;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.Transaction;
-import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.TransactionType;
 import com.aespa.armageddon.core.domain.transaction.command.domain.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,14 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
-    private final UserRepository userRepository;
 
     @Transactional
-    public void writeTransaction(String loginId, TransactionWriteRequest request) {
-
-        Long userNo = userRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new CoreException(ErrorType.USER_NOT_FOUND))
-                .getId();
+    public void writeTransaction(Long userNo, TransactionWriteRequest request) {
 
         Transaction transaction = new Transaction(
                 userNo,
@@ -41,11 +33,7 @@ public class TransactionService {
     }
 
     @Transactional
-    public void editTransaction(String loginId, Long transactionId, TransactionEditRequest request) {
-
-        Long userNo = userRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new CoreException(ErrorType.USER_NOT_FOUND))
-                .getId();
+    public void editTransaction(Long userNo, Long transactionId, TransactionEditRequest request) {
 
         Transaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new CoreException(ErrorType.TRANSACTION_NOT_FOUND));
