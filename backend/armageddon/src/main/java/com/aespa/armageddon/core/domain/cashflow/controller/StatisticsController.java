@@ -2,13 +2,10 @@ package com.aespa.armageddon.core.domain.cashflow.controller;
 
 import com.aespa.armageddon.core.common.support.error.CoreException;
 import com.aespa.armageddon.core.common.support.error.ErrorType;
+import com.aespa.armageddon.core.domain.cashflow.dto.CategoryExpenseRatio;
 import com.aespa.armageddon.core.domain.cashflow.dto.SummaryStatisticsResponse;
 import com.aespa.armageddon.core.domain.cashflow.service.StatisticsService;
 import com.aespa.armageddon.infra.security.JwtTokenProvider;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/statistics")
@@ -31,17 +29,11 @@ public class StatisticsController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate startDate,
-
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate
     ) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new CoreException(ErrorType.UNAUTHORIZED);
-        }
-
-        String token = authorization.substring(7);
-        Long userNo = jwtTokenProvider.getUserIdFromJWT(token);
+        Long userNo = extractUserNo(authorization);
 
         if (startDate == null || endDate == null) {
             YearMonth currentMonth = YearMonth.now();
@@ -52,5 +44,40 @@ public class StatisticsController {
         return ResponseEntity.ok(
                 statisticsService.getSummary(userNo, startDate, endDate)
         );
+    }
+
+    @GetMapping("/expense/categories")
+    public ResponseEntity<List<CategoryExpenseRatio>> getCategoryExpenseStatistics(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate
+    ) {
+        Long userNo = extractUserNo(authorization);
+
+        if (startDate == null || endDate == null) {
+            YearMonth currentMonth = YearMonth.now();
+            startDate = currentMonth.atDay(1);
+            endDate = currentMonth.atEndOfMonth();
+        }
+
+        return ResponseEntity.ok(
+                statisticsService.getCategoryExpenseWithRatio(
+                        userNo, startDate, endDate
+                )
+        );
+    }
+
+    // 🔒 공통 메서드
+    private Long extractUserNo(String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw new CoreException(ErrorType.UNAUTHORIZED);
+        }
+
+        String token = authorization.substring(7);
+        return jwtTokenProvider.getUserIdFromJWT(token);
     }
 }
