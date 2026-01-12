@@ -7,8 +7,14 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.WeekFields;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -90,4 +96,41 @@ public class StatisticsService {
                 resultLimit
         );
     }
+
+    //추이 관련 파트
+    public ExpenseTrendResponse getExpenseTrend(
+            Long userNo,
+            LocalDate startDate,
+            LocalDate endDate,
+            TrendUnit unit
+    ) {
+        List<ExpenseTrendRawDto> raws =
+                statisticsRepository.findExpenseTrend(userNo, startDate, endDate, unit);
+
+        Map<String, Long> aggregated = new LinkedHashMap<>();
+
+        DateTimeFormatter dayFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter monthFmt = DateTimeFormatter.ofPattern("yyyy-MM");
+        WeekFields wf = WeekFields.ISO;
+
+        for (ExpenseTrendRawDto raw : raws) {
+            String key = switch (unit) {
+                case DAY -> raw.date().format(dayFmt);
+                case WEEK -> {
+                    int week = raw.date().get(wf.weekOfWeekBasedYear());
+                    yield raw.date().getYear() + "-W" + String.format("%02d", week);
+                }
+                case MONTH -> raw.date().format(monthFmt);
+            };
+
+            aggregated.merge(key, raw.amount(), Long::sum);
+        }
+
+        List<ExpenseTrendPoint> data = aggregated.entrySet().stream()
+                .map(e -> new ExpenseTrendPoint(e.getKey(), e.getValue()))
+                .toList();
+
+        return new ExpenseTrendResponse(unit, data);
+    }
+
 }
