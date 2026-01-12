@@ -39,4 +39,16 @@ public class TransactionController {
         transactionService.editTransaction(userNo, transactionId, request);
         return ApiResult.success();
     }
+
+    @DeleteMapping("/delete/{transactionId}")
+    public ApiResult<?> deleteTransaction(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long transactionId
+    ) {
+        String token = authorization.substring(7);
+        Long userNo = jwtTokenProvider.getUserIdFromJWT(token);
+
+        transactionService.deleteTransaction(userNo, transactionId);
+        return ApiResult.success();
+    }
 }
