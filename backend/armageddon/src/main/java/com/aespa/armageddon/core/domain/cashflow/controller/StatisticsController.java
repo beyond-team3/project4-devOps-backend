@@ -4,6 +4,7 @@ import com.aespa.armageddon.core.common.support.error.CoreException;
 import com.aespa.armageddon.core.common.support.error.ErrorType;
 import com.aespa.armageddon.core.domain.cashflow.dto.CategoryExpenseRatio;
 import com.aespa.armageddon.core.domain.cashflow.dto.SummaryStatisticsResponse;
+import com.aespa.armageddon.core.domain.cashflow.dto.TopExpenseItemResponse;
 import com.aespa.armageddon.core.domain.cashflow.service.StatisticsService;
 import com.aespa.armageddon.infra.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -71,7 +72,37 @@ public class StatisticsController {
         );
     }
 
-    // 🔒 공통 메서드
+    /**
+     * 상위 지출 항목 조회
+     */
+    @GetMapping("/expense/top")
+    public ResponseEntity<List<TopExpenseItemResponse>> getTopExpenseItems(
+            @RequestHeader("Authorization") String authorization,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate,
+
+            @RequestParam(required = false)
+            Integer limit
+    ) {
+        Long userNo = extractUserNo(authorization);
+
+        return ResponseEntity.ok(
+                statisticsService.getTopExpenseItems(
+                        userNo,
+                        startDate,
+                        endDate,
+                        limit
+                )
+        );
+    }
+
+    //공통 메서드
     private Long extractUserNo(String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             throw new CoreException(ErrorType.UNAUTHORIZED);
@@ -80,4 +111,6 @@ public class StatisticsController {
         String token = authorization.substring(7);
         return jwtTokenProvider.getUserIdFromJWT(token);
     }
+
+
 }

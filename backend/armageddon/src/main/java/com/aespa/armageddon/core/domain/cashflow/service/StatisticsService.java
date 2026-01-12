@@ -1,14 +1,12 @@
 package com.aespa.armageddon.core.domain.cashflow.service;
 
-import com.aespa.armageddon.core.domain.cashflow.dto.CategoryExpenseRatio;
-import com.aespa.armageddon.core.domain.cashflow.dto.CategoryExpenseSum;
-import com.aespa.armageddon.core.domain.cashflow.dto.IncomeExpenseSum;
-import com.aespa.armageddon.core.domain.cashflow.dto.SummaryStatisticsResponse;
+import com.aespa.armageddon.core.domain.cashflow.dto.*;
 import com.aespa.armageddon.core.domain.cashflow.repository.StatisticsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -67,5 +65,29 @@ public class StatisticsService {
                         (double) sum.totalExpense() * 100 / totalExpense
                 ))
                 .toList();
+    }
+
+    public List<TopExpenseItemResponse> getTopExpenseItems(
+            Long userNo,
+            LocalDate startDate,
+            LocalDate endDate,
+            Integer limit
+    ) {
+        // 기본 기간: 이번 달
+        if (startDate == null || endDate == null) {
+            YearMonth currentMonth = YearMonth.now();
+            startDate = currentMonth.atDay(1);
+            endDate = currentMonth.atEndOfMonth();
+        }
+
+        // 기본 limit
+        int resultLimit = (limit == null || limit <= 0) ? 5 : limit;
+
+        return statisticsRepository.findTopExpenseItems(
+                userNo,
+                startDate,
+                endDate,
+                resultLimit
+        );
     }
 }
