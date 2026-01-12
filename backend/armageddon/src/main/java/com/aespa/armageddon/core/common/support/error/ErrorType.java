@@ -27,6 +27,8 @@ public enum ErrorType {
     INVALID_EMAIL_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, ErrorCode.A007, "이메일 인증 코드가 유효하지 않거나 만료되었습니다.", LogLevel.WARN),
     SAME_AS_OLD_PASSWORD(HttpStatus.BAD_REQUEST, ErrorCode.A008, "기존 비밀번호와 동일한 비밀번호로는 변경할 수 없습니다.", LogLevel.WARN),
 
+    TRANSACTION_NOT_FOUND(HttpStatus.NOT_FOUND, ErrorCode.T001, "거래내역을 찾을 수 없습니다.", LogLevel.WARN)
+
     ;
 
     private final HttpStatus status;
