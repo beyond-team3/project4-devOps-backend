@@ -52,4 +52,16 @@ public class TransactionService {
         );
     }
 
+    public void deleteTransaction(Long userNo, Long transactionId) {
+
+        Transaction transaction = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new CoreException(ErrorType.TRANSACTION_NOT_FOUND));
+
+        if (!transaction.getUserNo().equals(userNo)) {
+            throw new CoreException(ErrorType.ACCESS_DENIED);
+        }
+
+        transactionRepository.delete(transaction);
+    }
+
 }
