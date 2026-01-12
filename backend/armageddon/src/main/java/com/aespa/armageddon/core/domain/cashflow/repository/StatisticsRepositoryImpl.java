@@ -1,5 +1,6 @@
 package com.aespa.armageddon.core.domain.cashflow.repository;
 
+import com.aespa.armageddon.core.domain.cashflow.dto.CategoryExpenseSum;
 import com.aespa.armageddon.core.domain.cashflow.dto.IncomeExpenseSum;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.TransactionType;
 import jakarta.persistence.EntityManager;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -41,5 +43,29 @@ public class StatisticsRepositoryImpl implements StatisticsRepository {
                 ((Number) result[0]).longValue(),
                 ((Number) result[1]).longValue()
         );
+    }
+
+    @Override
+    public List<CategoryExpenseSum> findCategoryExpenseSum(
+            Long userNo,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        return em.createQuery("""
+        SELECT new com.aespa.armageddon.core.domain.cashflow.dto.CategoryExpenseSum(
+            t.category,
+            SUM(t.amount)
+        )
+        FROM Transaction t
+        WHERE t.userNo = :userNo
+          AND t.type = :expense
+          AND t.date BETWEEN :start AND :end
+        GROUP BY t.category
+    """, CategoryExpenseSum.class)
+                .setParameter("userNo", userNo)
+                .setParameter("expense", TransactionType.EXPENSE)
+                .setParameter("start", startDate)
+                .setParameter("end", endDate)
+                .getResultList();
     }
 }
