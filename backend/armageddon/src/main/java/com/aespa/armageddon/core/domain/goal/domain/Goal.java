@@ -22,7 +22,7 @@ public class Goal {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private GoalType goalType;   // SAVING / EXPENSE
+    private GoalType goalType; // SAVING / EXPENSE
 
     private String title;
 
@@ -52,8 +52,7 @@ public class Goal {
             String title,
             Integer targetAmount,
             LocalDate startDate,
-            LocalDate endDate
-    ) {
+            LocalDate endDate) {
         Goal goal = new Goal();
         goal.userId = userId;
         goal.goalType = GoalType.SAVING;
@@ -73,12 +72,11 @@ public class Goal {
             String title,
             Integer targetAmount,
             LocalDate startDate,
-            LocalDate endDate
-    ) {
+            LocalDate endDate) {
         Goal goal = new Goal();
         goal.userId = userId;
         goal.goalType = GoalType.EXPENSE;
-        goal.title = "[지출] " + category.name() + title;
+        goal.title = "[지출] " + title;
         goal.expenseCategory = category;
         goal.targetAmount = targetAmount;
         goal.startDate = startDate;
