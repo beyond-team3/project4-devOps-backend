@@ -1,7 +1,6 @@
-/*
-package com.aespa.armageddon.core.common.exception;
+package com.aespa.armageddon.core.common.support.error;
 
-import com.aespa.armageddon.core.common.response.ApiResult;
+import com.aespa.armageddon.core.common.support.response.ApiResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,15 +24,10 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
             HttpServletResponse response,
             AuthenticationException authException
     ) throws IOException, ServletException {
-
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setStatus(ErrorType.UNAUTHORIZED.getStatus().value());
         response.setContentType("application/json;charset=UTF-8");
 
-        ApiResult<Void> errorResponse = ApiResult.error(
-                ErrorCode.UNAUTHORIZED.getCode(),
-                ErrorCode.UNAUTHORIZED.getMessage()
-        );
-
+        ApiResult<?> errorResponse = ApiResult.error(ErrorType.UNAUTHORIZED);
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
-}*/
+}
