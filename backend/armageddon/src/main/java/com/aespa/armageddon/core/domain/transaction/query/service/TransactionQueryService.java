@@ -12,16 +12,15 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)     // 조회 전용 (성능 최적화 & 데이터 변경 실수 방지)
+@Transactional(readOnly = true) // 조회 전용 (성능 최적화 & 데이터 변경 실수 방지)
 public class TransactionQueryService {
 
     private final TransactionQueryRepository transactionQueryRepository;
 
-
     /*
-    * 일간 가계부 내역 조회
-    * 요청을 받으면 Repository로 전달
-    * */
+     * 일간 가계부 내역 조회
+     * 요청을 받으면 Repository로 전달
+     */
     public List<TransactionResponse> getDailyTransactions(Long userNo, LocalDate date) {
 
         return transactionQueryRepository.findDailyList(userNo, date);
@@ -35,5 +34,12 @@ public class TransactionQueryService {
 
         return transactionQueryRepository.findMonthlySummary(userNo, year, month);
 
+    }
+
+    public Long getTransactionSum(Long userNo,
+            com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.Category category,
+            com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.TransactionType type,
+            LocalDate startDate, LocalDate endDate) {
+        return transactionQueryRepository.findSum(userNo, category, type, startDate, endDate);
     }
 }

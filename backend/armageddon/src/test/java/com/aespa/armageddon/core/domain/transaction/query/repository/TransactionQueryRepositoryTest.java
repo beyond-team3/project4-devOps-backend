@@ -1,6 +1,5 @@
 package com.aespa.armageddon.core.domain.transaction.query.repository;
 
-
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.Category;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.Transaction;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.TransactionType;
@@ -20,7 +19,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@Import({QueryDslConfig.class, TransactionQueryRepository.class})
+@Import({ QueryDslConfig.class, TransactionQueryRepository.class })
 class TransactionQueryRepositoryTest {
 
     @Autowired
@@ -35,10 +34,11 @@ class TransactionQueryRepositoryTest {
 
         // given (준비)
         Long userNo = 1L;
-        LocalDate today = LocalDate.of(2026, 1 , 9);
+        LocalDate today = LocalDate.of(2026, 1, 9);
 
         Transaction t1 = createTransaction(userNo, today, "스타벅스", 6500, TransactionType.EXPENSE, Category.FOOD);
-        Transaction t2 = createTransaction(userNo, today.minusDays(1), "편의점", 3000, TransactionType.EXPENSE, Category.FOOD);
+        Transaction t2 = createTransaction(userNo, today.minusDays(1), "편의점", 3000, TransactionType.EXPENSE,
+                Category.FOOD);
         Transaction t3 = createTransaction(2L, today, "월급", 5000000, TransactionType.INCOME, null);
 
         em.persist(t1);
@@ -63,7 +63,8 @@ class TransactionQueryRepositoryTest {
 
     }
 
-    private Transaction createTransaction(Long userNo, LocalDate date, String title, int amount, TransactionType type, Category category) {
+    private Transaction createTransaction(Long userNo, LocalDate date, String title, int amount, TransactionType type,
+            Category category) {
 
         return new Transaction(
                 userNo,
@@ -72,8 +73,7 @@ class TransactionQueryRepositoryTest {
                 amount,
                 date,
                 type,
-                category
-        );
+                category);
 
     }
 
@@ -86,19 +86,24 @@ class TransactionQueryRepositoryTest {
         int month = 5; // 5월 데이터를 조회한다고 가정
 
         // 1. [포함 O] 5월 수입 (100,000원)
-        Transaction t1 = createTransaction(userNo, LocalDate.of(year, month, 1),"월급", 100000, TransactionType.INCOME, null);
+        Transaction t1 = createTransaction(userNo, LocalDate.of(year, month, 1), "월급", 100000, TransactionType.INCOME,
+                null);
 
         // 2. [포함 O] 5월 지출 (30,000원)
-        Transaction t2 = createTransaction(userNo, LocalDate.of(year, month, 15), "쇼핑", 30000, TransactionType.EXPENSE, Category.SHOPPING);
+        Transaction t2 = createTransaction(userNo, LocalDate.of(year, month, 15), "쇼핑", 30000, TransactionType.EXPENSE,
+                Category.SHOPPING);
 
         // 3. [포함 O] 5월 지출 (10,000원) - 지출이 여러 건일 때 합산 잘 되는지
-        Transaction t3 = createTransaction(userNo, LocalDate.of(year, month, 31), "식비", 10000, TransactionType.EXPENSE, Category.FOOD);
+        Transaction t3 = createTransaction(userNo, LocalDate.of(year, month, 31), "식비", 10000, TransactionType.EXPENSE,
+                Category.FOOD);
 
         // 4. [포함 X] 4월 데이터 (날짜 범위 밖)
-        Transaction t4 = createTransaction(userNo, LocalDate.of(year, 4, 30), "지난달", 50000, TransactionType.INCOME, null);
+        Transaction t4 = createTransaction(userNo, LocalDate.of(year, 4, 30), "지난달", 50000, TransactionType.INCOME,
+                null);
 
         // 5. [포함 X] 다른 유저 데이터
-        Transaction t5 = createTransaction(2L, LocalDate.of(year, month, 10), "남의돈", 999999, TransactionType.INCOME, null);
+        Transaction t5 = createTransaction(2L, LocalDate.of(year, month, 10), "남의돈", 999999, TransactionType.INCOME,
+                null);
 
         em.persist(t1);
         em.persist(t2);
@@ -124,5 +129,55 @@ class TransactionQueryRepositoryTest {
         assertThat(result.getBalance()).isEqualTo(60000L);
 
         System.out.println("테스트 성공 결과: " + result);
+    }
+
+    @Test
+    @DisplayName("조건에 맞는 거래 금액 합계를 정확히 계산한다")
+    void findSumTest() {
+        // given
+        Long userNo = 1L;
+        LocalDate startDate = LocalDate.of(2024, 5, 1);
+        LocalDate endDate = LocalDate.of(2024, 5, 31);
+
+        // 1. [Target] Expense, Food, User1, In Range -> 10,000
+        Transaction t1 = createTransaction(userNo, LocalDate.of(2024, 5, 10), "김밥", 10000, TransactionType.EXPENSE,
+                Category.FOOD);
+
+        // 2. [Target] Expense, Food, User1, In Range -> 20,000
+        Transaction t2 = createTransaction(userNo, LocalDate.of(2024, 5, 20), "라면", 20000, TransactionType.EXPENSE,
+                Category.FOOD);
+
+        // 3. [Diff Cat] Expense, Transport -> Ignored
+        Transaction t3 = createTransaction(userNo, LocalDate.of(2024, 5, 10), "버스", 5000, TransactionType.EXPENSE,
+                Category.TRANSPORT);
+
+        // 4. [Diff Type] Income -> Ignored
+        Transaction t4 = createTransaction(userNo, LocalDate.of(2024, 5, 10), "용돈", 50000, TransactionType.INCOME,
+                null);
+
+        // 5. [Diff User] User2 -> Ignored
+        Transaction t5 = createTransaction(2L, LocalDate.of(2024, 5, 10), "김밥", 10000, TransactionType.EXPENSE,
+                Category.FOOD);
+
+        // 6. [Diff Date] Out of Range -> Ignored
+        Transaction t6 = createTransaction(userNo, LocalDate.of(2024, 4, 30), "김밥", 10000, TransactionType.EXPENSE,
+                Category.FOOD);
+
+        em.persist(t1);
+        em.persist(t2);
+        em.persist(t3);
+        em.persist(t4);
+        em.persist(t5);
+        em.persist(t6);
+
+        em.flush();
+        em.clear();
+
+        // when
+        Long sum = transactionQueryRepository.findSum(userNo, Category.FOOD, TransactionType.EXPENSE, startDate,
+                endDate);
+
+        // then
+        assertThat(sum).isEqualTo(30000L); // 10000 + 20000
     }
 }
