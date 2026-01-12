@@ -2,6 +2,7 @@ package com.aespa.armageddon.core.domain.cashflow.repository;
 
 import com.aespa.armageddon.core.domain.cashflow.dto.CategoryExpenseSum;
 import com.aespa.armageddon.core.domain.cashflow.dto.IncomeExpenseSum;
+import com.aespa.armageddon.core.domain.cashflow.dto.TopExpenseItemResponse;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.TransactionType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -68,4 +69,34 @@ public class StatisticsRepositoryImpl implements StatisticsRepository {
                 .setParameter("end", endDate)
                 .getResultList();
     }
+
+    @Override
+    public List<TopExpenseItemResponse> findTopExpenseItems(
+            Long userNo,
+            LocalDate startDate,
+            LocalDate endDate,
+            int limit
+    ) {
+        return em.createQuery("""
+        SELECT new com.aespa.armageddon.core.domain.cashflow.dto.TopExpenseItemResponse(
+            t.transactionId,
+            t.title,
+            t.amount,
+            t.category,
+            t.date
+        )
+        FROM Transaction t
+        WHERE t.userNo = :userNo
+          AND t.type = :expense
+          AND t.date BETWEEN :start AND :end
+        ORDER BY t.amount DESC
+    """, TopExpenseItemResponse.class)
+                .setParameter("userNo", userNo)
+                .setParameter("expense", TransactionType.EXPENSE)
+                .setParameter("start", startDate)
+                .setParameter("end", endDate)
+                .setMaxResults(limit)
+                .getResultList();
+    }
+
 }
