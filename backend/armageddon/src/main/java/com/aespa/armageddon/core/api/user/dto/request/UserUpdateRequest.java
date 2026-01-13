@@ -1,6 +1,7 @@
 package com.aespa.armageddon.core.api.user.dto.request;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -20,4 +21,7 @@ public class UserUpdateRequest {
 
     @Size(min = 2, max = 10, message = "Nickname must be between 2 and 10 characters.")
     private String nickname;
+
+    @NotBlank(message = "Current password is required.")
+    private String currentPassword;
 }

@@ -46,7 +46,8 @@ public class UserService {
     }
 
     @Transactional
-    public User updateProfile(String currentLoginId, String newLoginId, String newEmail, String newNickname) {
+    public User updateProfile(String currentLoginId, String currentPassword,
+                              String newLoginId, String newEmail, String newNickname) {
         if (currentLoginId == null) {
             throw new CoreException(ErrorType.INVALID_INPUT_VALUE);
         }
@@ -57,9 +58,14 @@ public class UserService {
         String trimmedLoginId = trimToNull(newLoginId);
         String trimmedEmail = trimToNull(newEmail);
         String trimmedNickname = trimToNull(newNickname);
+        String trimmedCurrentPassword = trimToNull(currentPassword);
 
         if (trimmedLoginId == null && trimmedEmail == null && trimmedNickname == null) {
             throw new CoreException(ErrorType.INVALID_INPUT_VALUE);
+        }
+
+        if (trimmedCurrentPassword == null || !passwordEncoder.matches(trimmedCurrentPassword, user.getPassword())) {
+            throw new CoreException(ErrorType.INVALID_PASSWORD);
         }
 
         boolean loginIdChanged = false;
@@ -104,6 +110,15 @@ public class UserService {
         tokenStore.deletePasswordResetCode(user.getId());
         emailVerificationService.deleteByEmail(user.getEmail());
         userRepository.delete(user);
+    }
+
+    public User getProfile(String currentLoginId) {
+        if (currentLoginId == null) {
+            throw new CoreException(ErrorType.INVALID_INPUT_VALUE);
+        }
+
+        return userRepository.findByLoginId(currentLoginId)
+                .orElseThrow(() -> new CoreException(ErrorType.USER_NOT_FOUND));
     }
 
     private String trimToNull(String s) {
