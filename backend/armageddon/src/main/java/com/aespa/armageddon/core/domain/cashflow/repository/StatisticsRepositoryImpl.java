@@ -1,8 +1,6 @@
 package com.aespa.armageddon.core.domain.cashflow.repository;
 
-import com.aespa.armageddon.core.domain.cashflow.dto.CategoryExpenseSum;
-import com.aespa.armageddon.core.domain.cashflow.dto.IncomeExpenseSum;
-import com.aespa.armageddon.core.domain.cashflow.dto.TopExpenseItemResponse;
+import com.aespa.armageddon.core.domain.cashflow.dto.*;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.TransactionType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -98,5 +96,97 @@ public class StatisticsRepositoryImpl implements StatisticsRepository {
                 .setMaxResults(limit)
                 .getResultList();
     }
+
+    //추이통계 파트
+    @Override
+    public List<ExpenseTrendRawDto> findExpenseTrend(
+            Long userNo,
+            LocalDate startDate,
+            LocalDate endDate,
+            TrendUnit unit
+    ) {
+        return switch (unit) {
+            case DAY -> findByDay(userNo, startDate, endDate);
+            case WEEK -> findByWeek(userNo, startDate, endDate);
+            case MONTH -> findByMonth(userNo, startDate, endDate);
+        };
+    }
+
+    private List<ExpenseTrendRawDto> findByDay(
+            Long userNo,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        return em.createQuery("""
+        SELECT new com.aespa.armageddon.core.domain.cashflow.dto.ExpenseTrendRawDto(
+            t.date,
+            SUM(t.amount)
+        )
+        FROM Transaction t
+        WHERE t.userNo = :userNo
+          AND t.type = :expense
+          AND t.date BETWEEN :start AND :end
+        GROUP BY t.date
+        ORDER BY t.date
+    """, ExpenseTrendRawDto.class)
+                .setParameter("userNo", userNo)
+                .setParameter("expense", TransactionType.EXPENSE)
+                .setParameter("start", startDate)
+                .setParameter("end", endDate)
+                .getResultList();
+    }
+
+
+    private List<ExpenseTrendRawDto> findByWeek(
+            Long userNo,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        return em.createQuery("""
+        SELECT new com.aespa.armageddon.core.domain.cashflow.dto.ExpenseTrendRawDto(
+            t.date,
+            SUM(t.amount)
+        )
+        FROM Transaction t
+        WHERE t.userNo = :userNo
+          AND t.type = :expense
+          AND t.date BETWEEN :start AND :end
+        GROUP BY YEAR(t.date), WEEK(t.date)
+        ORDER BY YEAR(t.date), WEEK(t.date)
+    """, ExpenseTrendRawDto.class)
+                .setParameter("userNo", userNo)
+                .setParameter("expense", TransactionType.EXPENSE)
+                .setParameter("start", startDate)
+                .setParameter("end", endDate)
+                .getResultList();
+    }
+
+
+    private List<ExpenseTrendRawDto> findByMonth(
+            Long userNo,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        return em.createQuery("""
+        SELECT new com.aespa.armageddon.core.domain.cashflow.dto.ExpenseTrendRawDto(
+            t.date,
+            SUM(t.amount)
+        )
+        FROM Transaction t
+        WHERE t.userNo = :userNo
+          AND t.type = :expense
+          AND t.date BETWEEN :start AND :end
+        GROUP BY YEAR(t.date), MONTH(t.date)
+        ORDER BY YEAR(t.date), MONTH(t.date)
+    """, ExpenseTrendRawDto.class)
+                .setParameter("userNo", userNo)
+                .setParameter("expense", TransactionType.EXPENSE)
+                .setParameter("start", startDate)
+                .setParameter("end", endDate)
+                .getResultList();
+    }
+
+
+
 
 }

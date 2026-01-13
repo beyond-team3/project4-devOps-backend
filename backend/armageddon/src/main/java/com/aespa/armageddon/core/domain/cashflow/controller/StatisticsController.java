@@ -2,9 +2,7 @@ package com.aespa.armageddon.core.domain.cashflow.controller;
 
 import com.aespa.armageddon.core.common.support.error.CoreException;
 import com.aespa.armageddon.core.common.support.error.ErrorType;
-import com.aespa.armageddon.core.domain.cashflow.dto.CategoryExpenseRatio;
-import com.aespa.armageddon.core.domain.cashflow.dto.SummaryStatisticsResponse;
-import com.aespa.armageddon.core.domain.cashflow.dto.TopExpenseItemResponse;
+import com.aespa.armageddon.core.domain.cashflow.dto.*;
 import com.aespa.armageddon.core.domain.cashflow.service.StatisticsService;
 import com.aespa.armageddon.infra.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -98,6 +96,39 @@ public class StatisticsController {
                         startDate,
                         endDate,
                         limit
+                )
+        );
+    }
+
+    @GetMapping("/expense/trend")
+    public ResponseEntity<ExpenseTrendResponse> getExpenseTrend(
+            @RequestHeader("Authorization") String authorization,
+
+            @RequestParam TrendUnit unit,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate
+    ) {
+        Long userNo = extractUserNo(authorization);
+
+        // 기본값: 이번 달
+        if (startDate == null || endDate == null) {
+            YearMonth currentMonth = YearMonth.now();
+            startDate = currentMonth.atDay(1);
+            endDate = currentMonth.atEndOfMonth();
+        }
+
+        return ResponseEntity.ok(
+                statisticsService.getExpenseTrend(
+                        userNo,
+                        startDate,
+                        endDate,
+                        unit
                 )
         );
     }
