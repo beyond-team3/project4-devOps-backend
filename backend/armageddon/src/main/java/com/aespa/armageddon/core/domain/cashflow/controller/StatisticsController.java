@@ -2,8 +2,7 @@ package com.aespa.armageddon.core.domain.cashflow.controller;
 
 import com.aespa.armageddon.core.common.support.error.CoreException;
 import com.aespa.armageddon.core.common.support.error.ErrorType;
-import com.aespa.armageddon.core.domain.cashflow.dto.CategoryExpenseRatio;
-import com.aespa.armageddon.core.domain.cashflow.dto.SummaryStatisticsResponse;
+import com.aespa.armageddon.core.domain.cashflow.dto.*;
 import com.aespa.armageddon.core.domain.cashflow.service.StatisticsService;
 import com.aespa.armageddon.infra.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -71,7 +70,70 @@ public class StatisticsController {
         );
     }
 
-    // 🔒 공통 메서드
+    /**
+     * 상위 지출 항목 조회
+     */
+    @GetMapping("/expense/top")
+    public ResponseEntity<List<TopExpenseItemResponse>> getTopExpenseItems(
+            @RequestHeader("Authorization") String authorization,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate,
+
+            @RequestParam(required = false)
+            Integer limit
+    ) {
+        Long userNo = extractUserNo(authorization);
+
+        return ResponseEntity.ok(
+                statisticsService.getTopExpenseItems(
+                        userNo,
+                        startDate,
+                        endDate,
+                        limit
+                )
+        );
+    }
+
+    @GetMapping("/expense/trend")
+    public ResponseEntity<ExpenseTrendResponse> getExpenseTrend(
+            @RequestHeader("Authorization") String authorization,
+
+            @RequestParam TrendUnit unit,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate
+    ) {
+        Long userNo = extractUserNo(authorization);
+
+        // 기본값: 이번 달
+        if (startDate == null || endDate == null) {
+            YearMonth currentMonth = YearMonth.now();
+            startDate = currentMonth.atDay(1);
+            endDate = currentMonth.atEndOfMonth();
+        }
+
+        return ResponseEntity.ok(
+                statisticsService.getExpenseTrend(
+                        userNo,
+                        startDate,
+                        endDate,
+                        unit
+                )
+        );
+    }
+
+    //공통 메서드
     private Long extractUserNo(String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             throw new CoreException(ErrorType.UNAUTHORIZED);
@@ -80,4 +142,6 @@ public class StatisticsController {
         String token = authorization.substring(7);
         return jwtTokenProvider.getUserIdFromJWT(token);
     }
+
+
 }
