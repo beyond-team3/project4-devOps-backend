@@ -44,6 +44,7 @@ public class Goal {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime completedAt;
 
     /* ================= 생성/수정 로직 ================= */
 
@@ -87,7 +88,14 @@ public class Goal {
         return goal;
     }
 
-    public void updateTarget(Integer targetAmount, LocalDate endDate) {
+    public void updateTarget(String title, Integer targetAmount, LocalDate endDate) {
+        if (this.status == GoalStatus.COMPLETED || this.status == GoalStatus.FAILED) {
+            throw new IllegalStateException("완료되거나 실패한 목표는 수정할 수 없습니다.");
+        }
+
+        if (title != null && !title.isBlank()) {
+            this.title = title;
+        }
         this.targetAmount = targetAmount;
         if (this.goalType == GoalType.SAVING) {
             this.endDate = endDate;
@@ -95,8 +103,31 @@ public class Goal {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void complete() {
+    public void checkStatus(int progressRate) {
+        if (this.status != GoalStatus.ACTIVE) {
+            return;
+        }
+
+        // 100% 달성 시 완료 처리
+        if (progressRate >= 100) {
+            complete();
+            return;
+        }
+
+        // 기간 만료 시 처리
+        if (LocalDate.now().isAfter(endDate)) {
+            fail();
+        }
+    }
+
+    private void complete() {
         this.status = GoalStatus.COMPLETED;
+        this.completedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    private void fail() {
+        this.status = GoalStatus.FAILED;
         this.updatedAt = LocalDateTime.now();
     }
 
