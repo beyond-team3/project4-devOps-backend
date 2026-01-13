@@ -106,6 +106,15 @@ public class UserService {
         userRepository.delete(user);
     }
 
+    public User getProfile(String currentLoginId) {
+        if (currentLoginId == null) {
+            throw new CoreException(ErrorType.INVALID_INPUT_VALUE);
+        }
+
+        return userRepository.findByLoginId(currentLoginId)
+                .orElseThrow(() -> new CoreException(ErrorType.USER_NOT_FOUND));
+    }
+
     private String trimToNull(String s) {
         if (s == null) {
             return null;
