@@ -35,6 +35,7 @@ public class UserController {
                                             @Valid @RequestBody UserUpdateRequest request) {
         User updated = userService.updateProfile(
                 userDetails.getUsername(),
+                request.getCurrentPassword(),
                 request.getLoginId(),
                 request.getEmail(),
                 request.getNickname()
