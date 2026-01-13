@@ -3,10 +3,8 @@ package com.aespa.armageddon.core.domain.goal.service;
 import com.aespa.armageddon.core.domain.goal.domain.*;
 import com.aespa.armageddon.core.domain.goal.dto.request.*;
 import com.aespa.armageddon.core.domain.goal.dto.response.*;
+import com.aespa.armageddon.core.domain.goal.port.TransactionPort;
 import com.aespa.armageddon.core.domain.goal.repository.GoalRepository;
-import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.Category;
-import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.TransactionType;
-import com.aespa.armageddon.core.domain.transaction.query.service.TransactionQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +19,7 @@ import java.util.List;
 public class GoalService {
 
     private final GoalRepository goalRepository;
-    private final TransactionQueryService transactionQueryService;
+    private final TransactionPort transactionPort;
 
     /* ===================== 조회 ===================== */
 
@@ -33,12 +31,17 @@ public class GoalService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
+    // 상세 조회 시 상태 업데이트 로직이 포함되므로 readOnly = true 제거 혹은 별도 처리 필요
+    // 하지만 JPA Dirty Checking을 이용하려면 트랜잭션 내에서 엔티티 변경이 일어나야 함
     public GoalDetailResponse getGoalDetail(Long userId, Long goalId) {
         Goal goal = findGoal(userId, goalId);
 
         int currentAmount = getCurrentAmount(goal);
         int progressRate = calculateRate(currentAmount, goal.getTargetAmount());
+
+        // 상태 체크 및 업데이트 (Dirty Checking)
+        goal.checkStatus(progressRate);
+
         Integer expectedAmount = calculateExpectedAmount(goal, currentAmount);
 
         return new GoalDetailResponse(
@@ -85,7 +88,7 @@ public class GoalService {
 
     public void updateGoal(Long userId, Long goalId, UpdateGoalRequest request) {
         Goal goal = findGoal(userId, goalId);
-        goal.updateTarget(request.targetAmount(), request.endDate());
+        goal.updateTarget(request.title(), request.targetAmount(), request.endDate());
     }
 
     public void deleteGoal(Long userId, Long goalId) {
@@ -101,14 +104,10 @@ public class GoalService {
     }
 
     private int getCurrentAmount(Goal goal) {
-        Category category = goal.getGoalType() == GoalType.SAVING
-                ? Category.SAVING
-                : Category.valueOf(goal.getExpenseCategory().name());
-
-        Long sum = transactionQueryService.getTransactionSum(
+        Long sum = transactionPort.getTransactionSum(
                 goal.getUserId(),
-                category,
-                TransactionType.EXPENSE,
+                goal.getGoalType(),
+                goal.getExpenseCategory(),
                 goal.getStartDate(),
                 goal.getEndDate());
         return sum.intValue();
@@ -123,6 +122,8 @@ public class GoalService {
     private Integer calculateExpectedAmount(Goal goal, int currentAmount) {
         if (goal.getGoalType() != GoalType.SAVING)
             return null;
+        if (goal.getStatus() != GoalStatus.ACTIVE)
+            return null; // 완료/실패된 목표는 예측 불필요
 
         long totalDays = ChronoUnit.DAYS.between(goal.getStartDate(), goal.getEndDate()) + 1;
         long passedDays = ChronoUnit.DAYS.between(goal.getStartDate(), LocalDate.now()) + 1;
@@ -135,6 +136,13 @@ public class GoalService {
     }
 
     private String createStatusMessage(Goal goal, int current, Integer expected) {
+        if (goal.getStatus() == GoalStatus.COMPLETED) {
+            return "축하합니다! 목표를 달성했어요!";
+        }
+        if (goal.getStatus() == GoalStatus.FAILED) {
+            return "아쉽게도 목표 달성에 실패했어요.";
+        }
+
         if (goal.getGoalType() == GoalType.EXPENSE) {
             int remaining = goal.getTargetAmount() - current;
             if (remaining < 0)
