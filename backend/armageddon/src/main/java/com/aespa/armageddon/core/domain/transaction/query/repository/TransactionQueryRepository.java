@@ -20,6 +20,7 @@ public class TransactionQueryRepository {
 
         private final JPAQueryFactory queryFactory; // QueryDSL을 사용하기 위한 JPAQueryFactory 주입
 
+        /* 최근 거래 내역 리스트 조회 */
         public List<TransactionLatelyResponse> findLatelyList(Long userNo) {
                 return queryFactory
                                 .select(new QTransactionLatelyResponse(
@@ -27,6 +28,7 @@ public class TransactionQueryRepository {
                                                 transaction.date,
                                                 transaction.title,
                                                 transaction.amount,
+                                                transaction.category,
                                                 transaction.type))
                                 .from(transaction)
                                 .where(
@@ -37,13 +39,15 @@ public class TransactionQueryRepository {
                                 .fetch();
         }
 
-        public List<TransactionResponse> findDailyList(Long userNo, LocalDate date) {
+        /* 특정 날짜별 거래 내역 조회 */
+        public List<TransactionDailyResponse> findDailyList(Long userNo, LocalDate date) {
                 return queryFactory
-                                .select(new QTransactionResponse(
+                                .select(new QTransactionDailyResponse(
                                                 transaction.transactionId,
+                                                transaction.type,
                                                 transaction.title,
                                                 transaction.amount,
-                                                transaction.type))
+                                                transaction.category))
                                 .from(transaction)
                                 .where(
                                                 transaction.userNo.eq(userNo), // 유저 본인 내역 조회
@@ -51,6 +55,27 @@ public class TransactionQueryRepository {
                                 )
                                 .fetch();
         }
+
+        /* 수입, 지출 입력/수정 모달창 */
+        public List<TransactionResponse> findTransaction(Long userNo, Long transactionId) {
+                return queryFactory
+                                .select(new QTransactionResponse(
+                                                transaction.transactionId,
+                                                transaction.type,
+                                                transaction.date,
+                                                transaction.title,
+                                                transaction.amount,
+                                                transaction.category,
+                                                transaction.memo))
+                                .from(transaction)
+                                .where(
+                                                transaction.userNo.eq(userNo), // 유저 본인 내역 조회
+                                                transaction.transactionId.eq(transactionId) // 요청한 날짜의 내역 조회
+                                )
+                                .fetch();
+
+        }
+
 
         /* 월간 총 수입/지출/잔액 요약 조회 */
         public TransactionSummaryResponse findMonthlySummary(Long userNo, int year, int month) {

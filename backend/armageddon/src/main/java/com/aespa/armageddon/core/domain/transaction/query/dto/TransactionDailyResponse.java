@@ -5,27 +5,21 @@ import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.Tra
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.Data;
 
-import java.time.LocalDate;
-
 @Data
-public class TransactionResponse {
+public class TransactionDailyResponse {
 
-    private Long id;                // Transaction 의 PK(수정/삭제용)
-    private TransactionType type;   // INCOME(수입) / EXPENDITURE(지출)
-    private LocalDate date;         // 거래 날짜
+    private Long id;                // Transaction PK
+    private TransactionType type;   // 타입 (INCOME/EXPENSE)
     private String title;           // 거래 제목
     private int amount;             // 거래 금액
     private Category category;      // 카테고리
-    private String memo;            // 거래 메모
 
     @QueryProjection
-    public TransactionResponse(Long id,TransactionType type,LocalDate date, String title, int amount, Category category, String memo) {
+    public TransactionDailyResponse(Long id, TransactionType type, String title, int amount, Category category) {
         this.id = id;
         this.type = type;
-        this.date = date;
         this.title = title;
         this.amount = amount;
         this.category = category;
-        this.memo = memo;
     }
 }
