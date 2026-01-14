@@ -14,14 +14,16 @@ public class TransactionLatelyResponse {
     private LocalDate date;       // 거래 날짜
     private String title;         // 거래 제목
     private int amount;           // 거래 금액
+    private Category category;    // 카테고리
     private TransactionType type; // 타입 (INCOME/EXPENSE)
 
     @QueryProjection
-    public TransactionLatelyResponse(Long id, LocalDate date, String title, int amount, TransactionType type) {
+    public TransactionLatelyResponse(Long id, LocalDate date, String title, int amount,Category category, TransactionType type) {
         this.id = id;
         this.date = date;
         this.title = title;
         this.amount = amount;
+        this.category = category;
         this.type = type;
     }
 }

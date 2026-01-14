@@ -5,6 +5,7 @@ import com.aespa.armageddon.core.common.support.error.ErrorType;
 import com.aespa.armageddon.core.common.support.response.ApiResult;
 import com.aespa.armageddon.core.domain.auth.entity.User;
 import com.aespa.armageddon.core.domain.auth.repository.UserRepository;
+import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionDailyResponse;
 import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionLatelyResponse;
 import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionResponse;
 import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionSummaryResponse;
@@ -47,7 +48,7 @@ public class TransactionQueryController {
         /* 일간 상세 내역 조회 (날짜 클릭 시 리스트) */
         @GetMapping("/daily")
         @Operation(summary = "Get daily transactions")
-        public ApiResult<List<TransactionResponse>> getDailyTransactions(
+        public ApiResult<List<TransactionDailyResponse>> getDailyTransactions(
                         @AuthenticationPrincipal UserDetails userDetails,
                         @Parameter(description = "Date to query (YYYY-MM-DD)")
                         @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
@@ -56,6 +57,21 @@ public class TransactionQueryController {
                                 .orElseThrow(() -> new CoreException(ErrorType.USER_NOT_FOUND));
 
                 return ApiResult.success(transactionQueryService.getDailyTransactions(user.getId(), date));
+        }
+
+        /* 수입, 지출 입력/수정 모달창*/
+        @GetMapping("/modal")
+        @Operation(summary = "Get transaction detail")
+        public ApiResult<List<TransactionResponse>> getTransactions(
+                        @AuthenticationPrincipal UserDetails userDetails,
+                        @Parameter(description = "Transaction ID")
+                        @RequestParam Long transactionId
+                        ) {
+
+                User user = userRepository.findByLoginId(userDetails.getUsername())
+                        .orElseThrow(() -> new CoreException(ErrorType.USER_NOT_FOUND));
+
+                return ApiResult.success(transactionQueryService.getTransactions(user.getId(), transactionId));
         }
 
         /* 일간 총 수입/지출/잔액 요약 조회 */
