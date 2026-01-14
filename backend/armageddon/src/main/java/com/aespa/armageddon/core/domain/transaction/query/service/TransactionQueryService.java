@@ -18,6 +18,15 @@ public class TransactionQueryService {
     private final TransactionQueryRepository transactionQueryRepository;
 
     /*
+     * 최근 거래 내역 리스트 조회
+     * */
+    public List <TransactionResponse> getLatelyTransactions(Long userNo, Long transactionId) {
+
+        return transactionQueryRepository.findLatelyList(userNo, transactionId);
+
+    }
+
+    /*
      * 일간 가계부 내역 조회
      * 요청을 받으면 Repository로 전달
      */

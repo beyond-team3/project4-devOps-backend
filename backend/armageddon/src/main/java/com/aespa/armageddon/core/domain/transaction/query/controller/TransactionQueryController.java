@@ -2,6 +2,7 @@ package com.aespa.armageddon.core.domain.transaction.query.controller;
 
 import com.aespa.armageddon.core.domain.auth.entity.User;
 import com.aespa.armageddon.core.domain.auth.repository.UserRepository;
+import com.aespa.armageddon.core.domain.transaction.command.application.dto.request.TransactionWriteRequest;
 import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionResponse;
 import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionSummaryResponse;
 import com.aespa.armageddon.core.domain.transaction.query.service.TransactionQueryService;
@@ -9,15 +10,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.aespa.armageddon.infra.security.JwtTokenProvider;
+import com.aespa.armageddon.infra.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -30,7 +30,16 @@ import java.util.List;
 public class TransactionQueryController {
 
     private final TransactionQueryService transactionQueryService;
-    private final UserRepository userRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    /* 최근 거래 내역 리스트 */
+    @GetMapping("/list")
+    pubilc ApiResult<?> getLatelyTransactions(
+            @RequestHeader("Authorization") String authorization,
+            @RequestBody TransactionWriteRequest request
+            ) {
+
+    }
 
     /* 일간 상세 내역 조회 (날짜 클릭 시 리스트) */
     @GetMapping("/daily")

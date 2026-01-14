@@ -22,6 +22,21 @@ public class TransactionQueryRepository {
 
         private final JPAQueryFactory queryFactory; // QueryDSL을 사용하기 위한 JPAQueryFactory 주입
 
+        public List<TransactionResponse> findLatelyList(Long userNo, Long transactionId) {
+                return queryFactory
+                                .select(new QTransactionResponse(
+                                                transaction.transactionId,
+                                                transaction.title,
+                                                transaction.amount,
+                                                transaction.type))
+                                .from(transaction)
+                                .where(
+                                                transaction.userNo.eq(userNo),                 // 유저 본인 내역 조회
+                                                transaction.transactionId.eq(transactionId)
+                                )
+                                .fetch();
+        }
+
         public List<TransactionResponse> findDailyList(Long userNo, LocalDate date) {
                 return queryFactory
                                 .select(new QTransactionResponse(
