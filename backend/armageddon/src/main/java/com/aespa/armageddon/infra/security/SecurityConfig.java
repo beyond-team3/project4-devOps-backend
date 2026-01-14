@@ -50,6 +50,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login", "/api/auth/refresh",
                                         "/api/auth/password/reset/**", "/api/auth/email/verify/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
