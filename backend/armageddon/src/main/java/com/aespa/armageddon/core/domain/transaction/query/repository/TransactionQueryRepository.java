@@ -2,10 +2,8 @@ package com.aespa.armageddon.core.domain.transaction.query.repository;
 
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.Category;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.TransactionType;
-import com.aespa.armageddon.core.domain.transaction.query.dto.QTransactionResponse;
-import com.aespa.armageddon.core.domain.transaction.query.dto.QTransactionSummaryResponse;
-import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionResponse;
-import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionSummaryResponse;
+import com.aespa.armageddon.core.domain.transaction.query.dto.*;
+import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionLatelyResponse;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -22,18 +20,20 @@ public class TransactionQueryRepository {
 
         private final JPAQueryFactory queryFactory; // QueryDSL을 사용하기 위한 JPAQueryFactory 주입
 
-        public List<TransactionResponse> findLatelyList(Long userNo, Long transactionId) {
+        public List<TransactionLatelyResponse> findLatelyList(Long userNo) {
                 return queryFactory
-                                .select(new QTransactionResponse(
+                                .select(new QTransactionLatelyResponse(
                                                 transaction.transactionId,
+                                                transaction.date,
                                                 transaction.title,
                                                 transaction.amount,
                                                 transaction.type))
                                 .from(transaction)
                                 .where(
-                                                transaction.userNo.eq(userNo),                 // 유저 본인 내역 조회
-                                                transaction.transactionId.eq(transactionId)
+                                                transaction.userNo.eq(userNo) // 유저 본인 내역 조회
                                 )
+                                .orderBy(transaction.date.desc()) // 날짜 내림차순
+                                .limit(5) // 5개만 조회
                                 .fetch();
         }
 
@@ -79,6 +79,31 @@ public class TransactionQueryRepository {
                                 .where(
                                                 transaction.userNo.eq(userNo),
                                                 transaction.date.between(startDate, endDate) // 해당 월 데이터만
+                                )
+                                .fetchOne();
+        }
+
+        /* 일간 총 수입/지출/잔액 요약 조회 */
+        public TransactionSummaryResponse findDailySummary(Long userNo, LocalDate date) {
+                return queryFactory
+                                .select(new QTransactionSummaryResponse(
+                                                // 1. 수입 합계
+                                                new CaseBuilder()
+                                                                .when(transaction.type.eq(TransactionType.INCOME))
+                                                                .then(transaction.amount.longValue())
+                                                                .otherwise(0L)
+                                                                .sum(),
+
+                                                // 2. 지출 합계
+                                                new CaseBuilder()
+                                                                .when(transaction.type.eq(TransactionType.EXPENSE))
+                                                                .then(transaction.amount.longValue())
+                                                                .otherwise(0L)
+                                                                .sum()))
+                                .from(transaction)
+                                .where(
+                                                transaction.userNo.eq(userNo),
+                                                transaction.date.eq(date) // 해당 날짜 데이터만
                                 )
                                 .fetchOne();
         }
