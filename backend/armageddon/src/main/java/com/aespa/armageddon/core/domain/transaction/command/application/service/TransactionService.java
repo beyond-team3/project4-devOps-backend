@@ -52,6 +52,7 @@ public class TransactionService {
         );
     }
 
+    @Transactional
     public void deleteTransaction(Long userNo, Long transactionId) {
 
         Transaction transaction = transactionRepository.findById(transactionId)

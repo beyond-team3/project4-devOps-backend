@@ -41,7 +41,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    protected ResponseEntity<ApiResult<?>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+    protected ResponseEntity<ApiResult<?>> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException e) {
         log.warn("MethodArgumentTypeMismatchException: {}", e.getMessage());
         return ResponseEntity
                 .status(ErrorType.INVALID_TYPE_VALUE.getStatus())
@@ -49,7 +50,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    protected ResponseEntity<ApiResult<?>> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+    protected ResponseEntity<ApiResult<?>> handleMissingServletRequestParameterException(
+            MissingServletRequestParameterException e) {
         log.warn("MissingServletRequestParameterException: {}", e.getMessage());
         return ResponseEntity
                 .status(ErrorType.MISSING_REQUEST_PARAMETER.getStatus())
@@ -57,7 +59,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    protected ResponseEntity<ApiResult<?>> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
+    protected ResponseEntity<ApiResult<?>> handleHttpRequestMethodNotSupportedException(
+            HttpRequestMethodNotSupportedException e) {
         log.warn("HttpRequestMethodNotSupportedException: {}", e.getMessage());
         return ResponseEntity
                 .status(ErrorType.METHOD_NOT_ALLOWED.getStatus())

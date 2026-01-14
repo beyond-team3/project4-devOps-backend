@@ -88,7 +88,7 @@ public class Goal {
         return goal;
     }
 
-    public void updateTarget(String title, Integer targetAmount, LocalDate endDate) {
+    public void updateTarget(String title, Integer targetAmount, LocalDate startDate, LocalDate endDate) {
         if (this.status == GoalStatus.COMPLETED || this.status == GoalStatus.FAILED) {
             throw new IllegalStateException("완료되거나 실패한 목표는 수정할 수 없습니다.");
         }
@@ -97,9 +97,8 @@ public class Goal {
             this.title = title;
         }
         this.targetAmount = targetAmount;
-        if (this.goalType == GoalType.SAVING) {
-            this.endDate = endDate;
-        }
+        this.startDate = startDate;
+        this.endDate = endDate;
         this.updatedAt = LocalDateTime.now();
     }
 
