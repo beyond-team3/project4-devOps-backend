@@ -1,5 +1,6 @@
 package com.aespa.armageddon.core.domain.transaction.query.service;
 
+import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionLatelyResponse;
 import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionResponse;
 import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionSummaryResponse;
 import com.aespa.armageddon.core.domain.transaction.query.repository.TransactionQueryRepository;
@@ -18,12 +19,31 @@ public class TransactionQueryService {
     private final TransactionQueryRepository transactionQueryRepository;
 
     /*
+     * 최근 거래 내역 리스트 조회
+     */
+    public List<TransactionLatelyResponse> getLatelyTransactions(
+            Long userNo) {
+
+        return transactionQueryRepository.findLatelyList(userNo);
+
+    }
+
+    /*
      * 일간 가계부 내역 조회
      * 요청을 받으면 Repository로 전달
      */
     public List<TransactionResponse> getDailyTransactions(Long userNo, LocalDate date) {
 
         return transactionQueryRepository.findDailyList(userNo, date);
+
+    }
+
+    /**
+     * 일간 요약 정보 조회 (수입, 지출, 잔액)
+     */
+    public TransactionSummaryResponse getDailySummary(Long userNo, LocalDate date) {
+
+        return transactionQueryRepository.findDailySummary(userNo, date);
 
     }
 
