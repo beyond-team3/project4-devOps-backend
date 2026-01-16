@@ -1,10 +1,8 @@
 package com.aespa.armageddon.core.domain.cashflow.controller;
 
-import com.aespa.armageddon.core.common.support.error.CoreException;
-import com.aespa.armageddon.core.common.support.error.ErrorType;
+import com.aespa.armageddon.core.domain.auth.security.CustomUserDetails;
 import com.aespa.armageddon.core.domain.cashflow.dto.*;
 import com.aespa.armageddon.core.domain.cashflow.service.StatisticsService;
-import com.aespa.armageddon.infra.security.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -12,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -26,13 +25,11 @@ import java.util.List;
 public class StatisticsController {
 
     private final StatisticsService statisticsService;
-    private final JwtTokenProvider jwtTokenProvider;
 
     @GetMapping("/summary")
     @Operation(summary = "Get summary statistics")
     public ResponseEntity<SummaryStatisticsResponse> getSummaryStatistics(
-            @Parameter(description = "Bearer access token", required = true, example = "Bearer eyJ...")
-            @RequestHeader("Authorization") String authorization,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "Start date (YYYY-MM-DD)")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -42,8 +39,6 @@ public class StatisticsController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate
     ) {
-        Long userNo = extractUserNo(authorization);
-
         if (startDate == null || endDate == null) {
             YearMonth currentMonth = YearMonth.now();
             startDate = currentMonth.atDay(1);
@@ -51,15 +46,14 @@ public class StatisticsController {
         }
 
         return ResponseEntity.ok(
-                statisticsService.getSummary(userNo, startDate, endDate)
+                statisticsService.getSummary(userDetails.getUserId(), startDate, endDate)
         );
     }
 
     @GetMapping("/expense/categories")
     @Operation(summary = "Get expense ratio by category")
     public ResponseEntity<List<CategoryExpenseRatio>> getCategoryExpenseStatistics(
-            @Parameter(description = "Bearer access token", required = true, example = "Bearer eyJ...")
-            @RequestHeader("Authorization") String authorization,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "Start date (YYYY-MM-DD)")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -69,8 +63,6 @@ public class StatisticsController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate
     ) {
-        Long userNo = extractUserNo(authorization);
-
         if (startDate == null || endDate == null) {
             YearMonth currentMonth = YearMonth.now();
             startDate = currentMonth.atDay(1);
@@ -79,7 +71,7 @@ public class StatisticsController {
 
         return ResponseEntity.ok(
                 statisticsService.getCategoryExpenseWithRatio(
-                        userNo, startDate, endDate
+                        userDetails.getUserId(), startDate, endDate
                 )
         );
     }
@@ -90,8 +82,7 @@ public class StatisticsController {
     @GetMapping("/expense/top")
     @Operation(summary = "Get top expense items")
     public ResponseEntity<List<TopExpenseItemResponse>> getTopExpenseItems(
-            @Parameter(description = "Bearer access token", required = true, example = "Bearer eyJ...")
-            @RequestHeader("Authorization") String authorization,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
 
             @Parameter(description = "Start date (YYYY-MM-DD)")
             @RequestParam(required = false)
@@ -107,11 +98,9 @@ public class StatisticsController {
             @RequestParam(required = false)
             Integer limit
     ) {
-        Long userNo = extractUserNo(authorization);
-
         return ResponseEntity.ok(
                 statisticsService.getTopExpenseItems(
-                        userNo,
+                        userDetails.getUserId(),
                         startDate,
                         endDate,
                         limit
@@ -122,8 +111,7 @@ public class StatisticsController {
     @GetMapping("/expense/trend")
     @Operation(summary = "Get expense trend")
     public ResponseEntity<ExpenseTrendResponse> getExpenseTrend(
-            @Parameter(description = "Bearer access token", required = true, example = "Bearer eyJ...")
-            @RequestHeader("Authorization") String authorization,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
 
             @Parameter(description = "Trend unit (e.g. DAILY, WEEKLY, MONTHLY)")
             @RequestParam TrendUnit unit,
@@ -138,8 +126,6 @@ public class StatisticsController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate
     ) {
-        Long userNo = extractUserNo(authorization);
-
         // 기본값: 이번 달
         if (startDate == null || endDate == null) {
             YearMonth currentMonth = YearMonth.now();
@@ -149,23 +135,11 @@ public class StatisticsController {
 
         return ResponseEntity.ok(
                 statisticsService.getExpenseTrend(
-                        userNo,
+                        userDetails.getUserId(),
                         startDate,
                         endDate,
                         unit
                 )
         );
     }
-
-    //공통 메서드
-    private Long extractUserNo(String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new CoreException(ErrorType.UNAUTHORIZED);
-        }
-
-        String token = authorization.substring(7);
-        return jwtTokenProvider.getUserIdFromJWT(token);
-    }
-
-
 }

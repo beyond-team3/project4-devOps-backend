@@ -3,7 +3,8 @@ package com.aespa.armageddon.core.domain.cashflow.controller;
 import com.aespa.armageddon.core.domain.cashflow.dto.*;
 import com.aespa.armageddon.core.domain.cashflow.service.StatisticsService;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.Category;
-import com.aespa.armageddon.infra.security.JwtTokenProvider;
+import com.aespa.armageddon.core.domain.auth.security.CustomUserDetails;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -28,18 +33,29 @@ class StatisticsControllerTest {
     @Autowired
     MockMvc mockMvc;
 
+    @SuppressWarnings("deprecation")
     @MockBean
     StatisticsService statisticsService;
 
-    @MockBean
-    JwtTokenProvider jwtTokenProvider;
+    private static final Long USER_ID = 1L;
+    private static final String LOGIN_ID = "testUser";
+
+    private Authentication authentication() {
+        CustomUserDetails userDetails = new CustomUserDetails(USER_ID, LOGIN_ID, "password", null);
+        return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+    }
+
+    @BeforeEach
+    void setUp() {
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication());
+        SecurityContextHolder.setContext(context);
+    }
 
     @Test
     @DisplayName("요약 통계 조회 - 성공")
     void getSummaryStatistics() throws Exception {
         // given
-        String token = "ValidToken";
-        Long userNo = 1L;
         LocalDate start = LocalDate.of(2024, 1, 1);
         LocalDate end = LocalDate.of(2024, 1, 31);
 
@@ -50,13 +66,11 @@ class StatisticsControllerTest {
                 166L // averageDailyExpense
         );
 
-        given(jwtTokenProvider.getUserIdFromJWT(token)).willReturn(userNo);
-        given(statisticsService.getSummary(eq(userNo), any(LocalDate.class), any(LocalDate.class)))
+        given(statisticsService.getSummary(eq(USER_ID), any(LocalDate.class), any(LocalDate.class)))
                 .willReturn(response);
 
         // when & then
         mockMvc.perform(get("/api/statistics/summary")
-                .header("Authorization", "Bearer " + token)
                 .param("startDate", start.toString())
                 .param("endDate", end.toString())
                 .contentType(MediaType.APPLICATION_JSON))
@@ -71,20 +85,15 @@ class StatisticsControllerTest {
     @DisplayName("카테고리별 지출 비율 조회 - 성공")
     void getCategoryExpenseStatistics() throws Exception {
         // given
-        String token = "ValidToken";
-        Long userNo = 1L;
-
         List<CategoryExpenseRatio> response = List.of(
                 new CategoryExpenseRatio(Category.FOOD, 5000L, 50.0),
                 new CategoryExpenseRatio(Category.TRANSPORT, 5000L, 50.0));
 
-        given(jwtTokenProvider.getUserIdFromJWT(token)).willReturn(userNo);
-        given(statisticsService.getCategoryExpenseWithRatio(eq(userNo), any(LocalDate.class), any(LocalDate.class)))
+        given(statisticsService.getCategoryExpenseWithRatio(eq(USER_ID), any(LocalDate.class), any(LocalDate.class)))
                 .willReturn(response);
 
         // when & then
         mockMvc.perform(get("/api/statistics/expense/categories")
-                .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
@@ -96,17 +105,13 @@ class StatisticsControllerTest {
     @DisplayName("상위 지출 항목 조회 - 성공")
     void getTopExpenseItems() throws Exception {
         // given
-        String token = "ValidToken";
-        Long userNo = 1L;
-
         TopExpenseItemResponse item = new TopExpenseItemResponse(
                 1L, "Expensive Item", 50000,
                 Category.SHOPPING, LocalDate.of(2024, 1, 15)
         );
 
-        given(jwtTokenProvider.getUserIdFromJWT(token)).willReturn(userNo);
         given(statisticsService.getTopExpenseItems(
-                eq(userNo),
+                eq(USER_ID),
                 any(LocalDate.class),
                 any(LocalDate.class),
                 anyInt()
@@ -114,7 +119,6 @@ class StatisticsControllerTest {
 
         // when & then
         mockMvc.perform(get("/api/statistics/expense/top")
-                        .header("Authorization", "Bearer " + token)
                         .param("limit", "5")
                         .param("startDate", "2024-01-01")
                         .param("endDate", "2024-01-31")
@@ -129,21 +133,17 @@ class StatisticsControllerTest {
     @DisplayName("지출 추이 조회 - 성공")
     void getExpenseTrend() throws Exception {
         // given
-        String token = "ValidToken";
-        Long userNo = 1L;
         TrendUnit unit = TrendUnit.DAY;
 
         ExpenseTrendResponse response = new ExpenseTrendResponse(
                 unit,
                 List.of(new ExpenseTrendPoint("2024-01-01", 1000L)));
 
-        given(jwtTokenProvider.getUserIdFromJWT(token)).willReturn(userNo);
-        given(statisticsService.getExpenseTrend(eq(userNo), any(LocalDate.class), any(LocalDate.class), eq(unit)))
+        given(statisticsService.getExpenseTrend(eq(USER_ID), any(LocalDate.class), any(LocalDate.class), eq(unit)))
                 .willReturn(response);
 
         // when & then
         mockMvc.perform(get("/api/statistics/expense/trend")
-                .header("Authorization", "Bearer " + token)
                 .param("unit", "DAY")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())

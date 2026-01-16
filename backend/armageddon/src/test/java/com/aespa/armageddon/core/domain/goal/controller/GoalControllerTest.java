@@ -1,6 +1,7 @@
 package com.aespa.armageddon.core.domain.goal.controller;
 
 import com.aespa.armageddon.core.common.support.error.GlobalExceptionHandler;
+import com.aespa.armageddon.core.api.user.controller.MockUserDetailsArgumentResolver;
 import com.aespa.armageddon.core.domain.goal.domain.ExpenseCategory;
 import com.aespa.armageddon.core.domain.goal.domain.GoalStatus;
 import com.aespa.armageddon.core.domain.goal.domain.GoalType;
@@ -10,7 +11,6 @@ import com.aespa.armageddon.core.domain.goal.dto.request.UpdateGoalRequest;
 import com.aespa.armageddon.core.domain.goal.dto.response.GoalDetailResponse;
 import com.aespa.armageddon.core.domain.goal.dto.response.GoalResponse;
 import com.aespa.armageddon.core.domain.goal.service.GoalService;
-import com.aespa.armageddon.infra.security.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,7 +31,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -51,12 +50,7 @@ class GoalControllerTest {
     @Mock
     private GoalService goalService;
 
-    @Mock
-    private JwtTokenProvider jwtTokenProvider;
-
     private ObjectMapper objectMapper;
-
-
 
     @BeforeEach
     void setUp() {
@@ -66,6 +60,7 @@ class GoalControllerTest {
 
         mockMvc = MockMvcBuilders.standaloneSetup(goalController)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new MockUserDetailsArgumentResolver())
                 .build();
     }
 
@@ -78,8 +73,6 @@ class GoalControllerTest {
         @DisplayName("목표 전체 조회 성공")
         void getGoals_Success() throws Exception {
             // given
-            String token = "Bearer testToken";
-            Long userId = 1L;
             LocalDate now = LocalDate.now();
             LocalDate endDate = now.plusDays(30);
 
@@ -95,12 +88,10 @@ class GoalControllerTest {
                     endDate);
             List<GoalResponse> goalResponses = Collections.singletonList(goalResponse);
 
-            given(jwtTokenProvider.getUserIdFromJWT(anyString())).willReturn(userId);
-            given(goalService.getGoals(userId)).willReturn(goalResponses);
+            given(goalService.getGoals(1L)).willReturn(goalResponses);
 
             // when & then
-            mockMvc.perform(get("/api/goals")
-                    .header("Authorization", token))
+            mockMvc.perform(get("/api/goals"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.result").value("SUCCESS"))
                     .andExpect(jsonPath("$.data[0].goalId").value(1L))
@@ -117,8 +108,6 @@ class GoalControllerTest {
         @DisplayName("목표 세부정보 조회 성공")
         void getGoalDetail_Success() throws Exception {
             // given
-            String token = "Bearer testToken";
-            Long userId = 1L;
             Long goalId = 1L;
             LocalDate now = LocalDate.now();
             LocalDate endDate = now.plusDays(30);
@@ -137,12 +126,10 @@ class GoalControllerTest {
                     GoalStatus.ACTIVE,
                     null);
 
-            given(jwtTokenProvider.getUserIdFromJWT(anyString())).willReturn(userId);
-            given(goalService.getGoalDetail(userId, goalId)).willReturn(goalDetailResponse);
+            given(goalService.getGoalDetail(1L, goalId)).willReturn(goalDetailResponse);
 
             // when & then
-            mockMvc.perform(get("/api/goals/{goalId}", goalId)
-                    .header("Authorization", token))
+            mockMvc.perform(get("/api/goals/{goalId}", goalId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.result").value("SUCCESS"))
                     .andExpect(jsonPath("$.data.goalId").value(1L))
@@ -158,8 +145,6 @@ class GoalControllerTest {
         @DisplayName("저축 목표 생성 성공")
         void createSavingGoal_Success() throws Exception {
             // given
-            String token = "Bearer testToken";
-            Long userId = 1L;
             LocalDate now = LocalDate.now();
             LocalDate endDate = now.plusDays(30);
 
@@ -169,12 +154,10 @@ class GoalControllerTest {
                     now,
                     endDate);
 
-            given(jwtTokenProvider.getUserIdFromJWT(anyString())).willReturn(userId);
             doNothing().when(goalService).createSavingGoal(anyLong(), any(CreateSavingGoalRequest.class));
 
             // when & then
             mockMvc.perform(post("/api/goals/saving")
-                    .header("Authorization", token)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -192,8 +175,6 @@ class GoalControllerTest {
         @DisplayName("지출 목표 생성 성공")
         void createExpenseGoal_Success() throws Exception {
             // given
-            String token = "Bearer testToken";
-            Long userId = 1L;
             LocalDate now = LocalDate.now();
             LocalDate endDate = now.plusDays(30);
 
@@ -204,12 +185,10 @@ class GoalControllerTest {
                     now,
                     endDate);
 
-            given(jwtTokenProvider.getUserIdFromJWT(anyString())).willReturn(userId);
             doNothing().when(goalService).createExpenseGoal(anyLong(), any(CreateExpenseGoalRequest.class));
 
             // when & then
             mockMvc.perform(post("/api/goals/expense")
-                    .header("Authorization", token)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -227,8 +206,6 @@ class GoalControllerTest {
         @DisplayName("목표 수정 성공")
         void updateGoal_Success() throws Exception {
             // given
-            String token = "Bearer testToken";
-            Long userId = 1L;
             Long goalId = 1L;
             LocalDate now = LocalDate.now();
             LocalDate endDate = now.plusDays(30);
@@ -239,12 +216,10 @@ class GoalControllerTest {
                     now,
                     endDate);
 
-            given(jwtTokenProvider.getUserIdFromJWT(anyString())).willReturn(userId);
             doNothing().when(goalService).updateGoal(anyLong(), anyLong(), any(UpdateGoalRequest.class));
 
             // when & then
             mockMvc.perform(put("/api/goals/{goalId}", goalId)
-                    .header("Authorization", token)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -262,20 +237,16 @@ class GoalControllerTest {
         @DisplayName("목표 삭제 성공")
         void deleteGoal_Success() throws Exception {
             // given
-            String token = "Bearer testToken";
-            Long userId = 1L;
             Long goalId = 1L;
 
-            given(jwtTokenProvider.getUserIdFromJWT(anyString())).willReturn(userId);
-            doNothing().when(goalService).deleteGoal(userId, goalId);
+            doNothing().when(goalService).deleteGoal(1L, goalId);
 
             // when & then
-            mockMvc.perform(delete("/api/goals/{goalId}", goalId)
-                    .header("Authorization", token))
+            mockMvc.perform(delete("/api/goals/{goalId}", goalId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.result").value("SUCCESS"));
 
-            verify(goalService).deleteGoal(userId, goalId);
+            verify(goalService).deleteGoal(1L, goalId);
         }
     }
 }
