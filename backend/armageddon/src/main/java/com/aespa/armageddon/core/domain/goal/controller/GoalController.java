@@ -1,18 +1,18 @@
 package com.aespa.armageddon.core.domain.goal.controller;
 
 import com.aespa.armageddon.core.common.support.response.ApiResult;
+import com.aespa.armageddon.core.domain.auth.security.CustomUserDetails;
 import com.aespa.armageddon.core.domain.goal.dto.request.CreateExpenseGoalRequest;
 import com.aespa.armageddon.core.domain.goal.dto.request.CreateSavingGoalRequest;
 import com.aespa.armageddon.core.domain.goal.dto.request.UpdateGoalRequest;
 import com.aespa.armageddon.core.domain.goal.dto.response.GoalDetailResponse;
 import com.aespa.armageddon.core.domain.goal.dto.response.GoalResponse;
 import com.aespa.armageddon.core.domain.goal.service.GoalService;
-import com.aespa.armageddon.infra.security.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,12 +25,6 @@ import java.util.List;
 public class GoalController {
 
         private final GoalService goalService;
-        private final JwtTokenProvider jwtTokenProvider;
-
-        private Long extractUserId(String authorization) {
-                String token = authorization.substring(7); // "Bearer "
-                return jwtTokenProvider.getUserIdFromJWT(token);
-        }
 
         /**
          * 목표 전체 조회 (저축 + 지출)
@@ -38,11 +32,9 @@ public class GoalController {
         @GetMapping
         @Operation(summary = "Get all goals")
         public ApiResult<List<GoalResponse>> getGoals(
-                        @Parameter(description = "Bearer access token", required = true, example = "Bearer eyJ...")
-                        @RequestHeader("Authorization") String authorization) {
+                        @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-                Long userId = extractUserId(authorization);
-                return ApiResult.success(goalService.getGoals(userId));
+                return ApiResult.success(goalService.getGoals(userDetails.getUserId()));
         }
 
         /**
@@ -51,13 +43,10 @@ public class GoalController {
         @GetMapping("/{goalId}")
         @Operation(summary = "Get goal details")
         public ApiResult<GoalDetailResponse> getGoalDetail(
-                        @Parameter(description = "Bearer access token", required = true, example = "Bearer eyJ...")
-                        @RequestHeader("Authorization") String authorization,
-                        @Parameter(description = "Goal id")
+                        @AuthenticationPrincipal CustomUserDetails userDetails,
                         @PathVariable Long goalId) {
 
-                Long userId = extractUserId(authorization);
-                return ApiResult.success(goalService.getGoalDetail(userId, goalId));
+                return ApiResult.success(goalService.getGoalDetail(userDetails.getUserId(), goalId));
         }
 
         /**
@@ -66,12 +55,10 @@ public class GoalController {
         @PostMapping("/saving")
         @Operation(summary = "Create saving goal")
         public ApiResult<?> createSavingGoal(
-                        @Parameter(description = "Bearer access token", required = true, example = "Bearer eyJ...")
-                        @RequestHeader("Authorization") String authorization,
+                        @AuthenticationPrincipal CustomUserDetails userDetails,
                         @RequestBody CreateSavingGoalRequest request) {
 
-                Long userId = extractUserId(authorization);
-                goalService.createSavingGoal(userId, request);
+                goalService.createSavingGoal(userDetails.getUserId(), request);
                 return ApiResult.success();
         }
 
@@ -81,12 +68,10 @@ public class GoalController {
         @PostMapping("/expense")
         @Operation(summary = "Create expense goal")
         public ApiResult<?> createExpenseGoal(
-                        @Parameter(description = "Bearer access token", required = true, example = "Bearer eyJ...")
-                        @RequestHeader("Authorization") String authorization,
+                        @AuthenticationPrincipal CustomUserDetails userDetails,
                         @RequestBody CreateExpenseGoalRequest request) {
 
-                Long userId = extractUserId(authorization);
-                goalService.createExpenseGoal(userId, request);
+                goalService.createExpenseGoal(userDetails.getUserId(), request);
                 return ApiResult.success();
         }
 
@@ -96,14 +81,11 @@ public class GoalController {
         @PutMapping("/{goalId}")
         @Operation(summary = "Update goal")
         public ApiResult<?> updateGoal(
-                        @Parameter(description = "Bearer access token", required = true, example = "Bearer eyJ...")
-                        @RequestHeader("Authorization") String authorization,
-                        @Parameter(description = "Goal id")
+                        @AuthenticationPrincipal CustomUserDetails userDetails,
                         @PathVariable Long goalId,
                         @RequestBody UpdateGoalRequest request) {
 
-                Long userId = extractUserId(authorization);
-                goalService.updateGoal(userId, goalId, request);
+                goalService.updateGoal(userDetails.getUserId(), goalId, request);
                 return ApiResult.success();
         }
 
@@ -113,13 +95,10 @@ public class GoalController {
         @DeleteMapping("/{goalId}")
         @Operation(summary = "Delete goal")
         public ApiResult<?> deleteGoal(
-                        @Parameter(description = "Bearer access token", required = true, example = "Bearer eyJ...")
-                        @RequestHeader("Authorization") String authorization,
-                        @Parameter(description = "Goal id")
+                        @AuthenticationPrincipal CustomUserDetails userDetails,
                         @PathVariable Long goalId) {
 
-                Long userId = extractUserId(authorization);
-                goalService.deleteGoal(userId, goalId);
+                goalService.deleteGoal(userDetails.getUserId(), goalId);
                 return ApiResult.success();
         }
 }

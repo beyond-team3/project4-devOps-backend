@@ -1,15 +1,12 @@
 package com.aespa.armageddon.core.domain.transaction.query.controller;
 
-import com.aespa.armageddon.core.domain.auth.entity.User;
-import com.aespa.armageddon.core.domain.auth.repository.UserRepository;
+import com.aespa.armageddon.core.domain.auth.security.CustomUserDetails;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.Category;
 import com.aespa.armageddon.core.domain.transaction.command.domain.aggregate.TransactionType;
 import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionDailyResponse;
 import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionLatelyResponse;
-import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionResponse;
 import com.aespa.armageddon.core.domain.transaction.query.dto.TransactionSummaryResponse;
 import com.aespa.armageddon.core.domain.transaction.query.service.TransactionQueryService;
-import com.aespa.armageddon.infra.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,13 +22,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,35 +36,19 @@ class TransactionQueryControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @SuppressWarnings("deprecation")
     @MockBean
     private TransactionQueryService transactionQueryService;
 
-    @MockBean
-    private UserRepository userRepository;
-
-    @MockBean
-    private JwtTokenProvider jwtTokenProvider;
+    private Authentication authentication() {
+        CustomUserDetails userDetails = new CustomUserDetails(1L, "testUser", "password", null);
+        return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+    }
 
     @BeforeEach
     void setUp() {
-        // 1. SecurityContext에 들어갈 UserDetails Mocking
-        org.springframework.security.core.userdetails.UserDetails mockUserDetails = mock(
-                org.springframework.security.core.userdetails.UserDetails.class);
-        given(mockUserDetails.getUsername()).willReturn("testUser");
-        given(mockUserDetails.getAuthorities()).willReturn(Collections.emptyList());
-
-        // 2. Repository가 반환할 User Entity Mocking
-        User mockUserEntity = mock(User.class);
-        given(mockUserEntity.getId()).willReturn(1L);
-
-        // Controller가 UserDetails의 username으로 Repository 조회 시 Entity 반환하도록 설정
-        given(userRepository.findByLoginId("testUser")).willReturn(Optional.of(mockUserEntity));
-
-        // 3. SecurityContext 설정
-        Authentication auth = new UsernamePasswordAuthenticationToken(mockUserDetails, null,
-                mockUserDetails.getAuthorities());
         SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(auth);
+        context.setAuthentication(authentication());
         SecurityContextHolder.setContext(context);
     }
 
