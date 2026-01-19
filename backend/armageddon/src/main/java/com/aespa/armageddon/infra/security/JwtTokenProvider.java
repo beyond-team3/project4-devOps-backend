@@ -1,11 +1,15 @@
 package com.aespa.armageddon.infra.security;
 
-import io.jsonwebtoken.*;
+import com.aespa.armageddon.core.common.support.error.CoreException;
+import com.aespa.armageddon.core.common.support.error.ErrorType;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -64,11 +68,10 @@ public class JwtTokenProvider {
             Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
             return true;
         } catch (ExpiredJwtException e) {
-//            throw new CoreException(ErrorCode.SESSION_EXPIRED);
+            throw new CoreException(ErrorType.SESSION_EXPIRED);
         } catch (JwtException | IllegalArgumentException e) {
-//            throw new CoreException(ErrorCode.UNAUTHORIZED);
+            throw new CoreException(ErrorType.UNAUTHORIZED);
         }
-        return false;
     }
 
     public String getLoginIdFromJWT(String token) {

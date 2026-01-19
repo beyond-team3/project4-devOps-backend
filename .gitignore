@@ -1,0 +1,35 @@
+############################################
+# 1) Secrets / Config
+############################################
+# Spring Boot config
+application*.yml
+application*.yaml
+!application.example.yml
+!application.example.yaml
+
+# .env (Vite/Node/Spring 등)
+.env
+.env.*
+!.env.example
+
+# Keystore / certificates
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+*.crt
+
+# Logs
+*.log
+logs/
+log/
+
+############################################
+# 2) Java / Gradle / Maven
+############################################
+# Gradle
+.gradle/
+build/
+out/
+
