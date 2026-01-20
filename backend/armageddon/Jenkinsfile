@@ -119,6 +119,7 @@ pipeline {
                             sh """
                                 git add backend/deployment.yml
                                 git commit -m 'Update backend image to ${currentBuild.number} [skip ci]' || echo 'No changes to commit'
+                                git pull origin main --rebase
                                 git push https://github.com/beyond-team3/project4-devOps-backend.git main
                             """
                         }
