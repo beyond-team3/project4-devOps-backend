@@ -119,7 +119,7 @@ public class Goal {
      *   - 기간 만료 & 미달 → FAILED
      * - EXPENSE
      *   - current > target → EXCEEDED
-     *   - 기간 만료 & 이하 → COMPLETED
+     *   - 기간 만료 & 이하 → SUCCESS
      */
     public void updateStatus(int currentAmount) {
         if (this.status != GoalStatus.ACTIVE) {
@@ -147,7 +147,7 @@ public class Goal {
         }
 
         if (today.isAfter(endDate)) {
-            complete();
+            succeedExpenseGoal();
         }
     }
 
@@ -172,6 +172,15 @@ public class Goal {
             throw new IllegalStateException("지출 목표만 초과 처리할 수 있습니다.");
         }
         this.status = GoalStatus.EXCEEDED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    private void succeedExpenseGoal() {
+        if (this.goalType != GoalType.EXPENSE) {
+            throw new IllegalStateException("지출 목표만 성공 처리할 수 있습니다.");
+        }
+        this.status = GoalStatus.SUCCESS;
+        this.completedAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
