@@ -117,7 +117,6 @@ public class Goal {
      * - SAVING
      *   - current >= target → COMPLETED
      *   - 기간 만료 & 미달 → FAILED
-     *
      * - EXPENSE
      *   - current > target → EXCEEDED
      *   - 기간 만료 & 이하 → COMPLETED
