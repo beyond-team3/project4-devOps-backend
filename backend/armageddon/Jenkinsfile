@@ -68,15 +68,15 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-guntinue', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         dir('backend/armageddon') {
                             if (isUnix()) {
-                                sh "docker build -t ${DOCKER_USER}/armageddon-backend:${currentBuild.number} ."
-                                sh "docker build -t ${DOCKER_USER}/armageddon-backend:latest ."
+                                sh "docker build --no-cache -t ${DOCKER_USER}/armageddon-backend:${currentBuild.number} ."
+                                sh "docker build --no-cache -t ${DOCKER_USER}/armageddon-backend:latest ."
                                 sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
                                 sh "docker push ${DOCKER_USER}/armageddon-backend:${currentBuild.number}"
                                 sh "docker push ${DOCKER_USER}/armageddon-backend:latest"
                                 sh "docker logout"
                             } else {
-                                bat "docker build -t ${DOCKER_USER}/armageddon-backend:${currentBuild.number} ."
-                                bat "docker build -t ${DOCKER_USER}/armageddon-backend:latest ."
+                                bat "docker build --no-cache -t ${DOCKER_USER}/armageddon-backend:${currentBuild.number} ."
+                                bat "docker build --no-cache -t ${DOCKER_USER}/armageddon-backend:latest ."
                                 bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
                                 bat "docker push ${DOCKER_USER}/armageddon-backend:${currentBuild.number}"
                                 bat "docker push ${DOCKER_USER}/armageddon-backend:latest"
@@ -88,7 +88,7 @@ pipeline {
             }
         }
 
-        stage('K8S Manifest Update') {
+        stage('k8s Manifest Update') {
             steps {
                 script {
                     withCredentials([
@@ -97,25 +97,31 @@ pipeline {
                     ]) {
                         // Kubernetes 매니페스트 저장소 체크아웃
                         dir('backend') {
-                            git branch: 'main',
-                            credentialsId: 'guntinue-git-auth',
-                            url: "${env.MANIFESTS_GITHUB_URL}"
+                            checkout([
+                                $class: 'GitSCM',
+                                branches: [[name: 'main']],
+                                userRemoteConfigs: [[
+                                    url: "https://github.com/beyond-team3/project4-devOps-manifests.git",
+                                    credentialsId: 'guntinue-git-auth'
+                                ]],
+                                extensions: [[$class: 'CleanBeforeCheckout']],
+                                poll: false // 이 저장소는 변경되어도 빌드를 유발하지 않음
+                            ])
 
                              // Git 사용자 설정
                             sh "git config user.name '${env.GIT_USERNAME}'"
                             sh "git config user.email '${env.GIT_EMAIL}'"
 
                             // Deployment 이미지 태그 업데이트 (backend/deployment.yml)
-                            // Mac/Linux 호환성을 위해 sed -i '' 사용하지 않음 (Jenkins는 보통 Linux)
                             sh """
-                                sh "sed -i '' 's|image: .*|image: ${DOCKER_USER}/armageddon-backend:${currentBuild.number}|g' backend/deployment.yml"
+                                sed -i '' 's|image: .*|image: ${DOCKER_USER}/armageddon-frontend:${currentBuild.number}|g' backend/deployment.yml
                             """
 
                             // 변경사항 커밋 및 푸시
                             sh """
                                 git add backend/deployment.yml
-                                git commit -m 'Update backend image to ${currentBuild.number} [skip ci]' || echo 'No changes to commit'
-                                git push https://github.com/beyond-team3/project4-devOps-backend.git main
+                                git commit -m 'Update backend image to ${currentBuild.number}' || echo 'No changes to commit'
+                                git push https://${GIT_USER}:${GIT_TOKEN}@github.com/beyond-team3/project4-devOps-manifests.git main
                             """
                         }
                     }
