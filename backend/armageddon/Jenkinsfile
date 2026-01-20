@@ -152,10 +152,10 @@ pipeline {
             }
         }
         success {
-            withCredentials([string(credentialsId: DISCORD_CREDENTIAL_ID, variable: 'DISCORD')]) {
+            withCredentials([string(credentialsId: 'armageddon-discord', variable: 'DISCORD')]) {
                 discordSend(
                     description: """
-                    **Backend 빌드 성공!** :tada:
+                    **빌드 성공!** :tada:
 
                     **제목**: ${currentBuild.displayName}
                     **결과**: :white_check_mark: ${currentBuild.currentResult}
