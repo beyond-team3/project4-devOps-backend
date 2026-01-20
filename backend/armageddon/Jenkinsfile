@@ -1,0 +1,174 @@
+pipeline {
+    agent any
+
+    environment {
+        // GitHub 저장소 URL (Team2로 수정됨)
+        SOURCE_GITHUB_URL = 'https://github.com/beyond-team2/project4-devOps-backend.git'
+        MANIFESTS_GITHUB_URL = 'https://github.com/beyond-team2/project4-devOps-manifests.git'
+
+        // Git 설정
+        GIT_USERNAME = 'guntinue'
+        GIT_EMAIL = 'rjssn93@gmail.com'
+
+        // Credential IDs 
+        GIT_CREDENTIAL_ID = 'guntinue-git-auth'
+        DOCKER_CREDENTIAL_ID = 'docker-hub-guntinue'
+        DISCORD_CREDENTIAL_ID = 'armageddon-discord'
+        
+        // Docker 이미지 설정 
+        DOCKER_IMAGE_NAME = 'guntinue/armageddon-backend'
+    }
+
+    stages {
+        stage('Source Build') {
+            steps {
+                // 소스 코드 체크아웃
+                git branch: 'main',
+                    credentialsId: GIT_CREDENTIAL_ID,
+                    url: "${env.SOURCE_GITHUB_URL}"
+
+                // Gradle 권한 부여 및 빌드
+                dir('backend/armageddon') {
+                    sh 'chmod +x ./gradlew'
+                    sh './gradlew clean build -x test'
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                dir('backend/armageddon') {
+                    // 테스트용 환경변수 설정 (User Draft 참조)
+                    withEnv([
+                        'SPRING_PROFILES_ACTIVE=test',
+                        'SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb',
+                        'SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver',
+                        'SPRING_DATASOURCE_USERNAME=sa',
+                        'SPRING_DATASOURCE_PASSWORD=',
+                        'SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop',
+                        'SPRING_DATA_REDIS_HOST=localhost',
+                        'SPRING_DATA_REDIS_PORT=6379',
+                        'SPRING_DATA_REDIS_DATABASE=0',
+                        'SPRING_MAIL_HOST=smtp.test.com',
+                        'SPRING_MAIL_PORT=587',
+                        'SPRING_MAIL_USERNAME=test@test.com',
+                        'SPRING_MAIL_PASSWORD=testpassword',
+                        'JWT_SECRET=dGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLW9ubHktMjU2Yml0cw==',
+                        'JWT_EXPIRATION=1800000',
+                        'JWT_REFRESH_EXPIRATION=1209600000'
+                    ]) {
+                       sh './gradlew test'
+                    }
+                }
+            }
+            post {
+                always {
+                    dir('backend/armageddon') {
+                        junit '**/build/test-results/test/*.xml'
+                    }
+                }
+            }
+        }
+
+        stage('Docker Build and Push') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIAL_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        dir('backend/armageddon') {
+                            if (isUnix()) {
+                                sh "docker build -t ${DOCKER_IMAGE_NAME}:armageddon-backend:${currentBuild.number} ."
+                                sh "docker build -t ${DOCKER_IMAGE_NAME}:armageddon-backend:latest ."
+                                sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
+                                sh "docker push ${DOCKER_IMAGE_NAME}:armageddon-backend:${currentBuild.number}"
+                                sh "docker push ${DOCKER_IMAGE_NAME}:armageddon-backend:latest"
+                                sh "docker logout"
+                            } else {
+                                bat "docker build -t ${DOCKER_IMAGE_NAME}:armageddon-backend:${currentBuild.number} ."
+                                bat "docker build -t ${DOCKER_IMAGE_NAME}:armageddon-backend:latest ."
+                                bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
+                                bat "docker push ${DOCKER_IMAGE_NAME}:armageddon-backend:${currentBuild.number}"
+                                bat "docker push ${DOCKER_IMAGE_NAME}:armageddon-backend:latest"
+                                bat "docker logout"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('K8S Manifest Update') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: GIT_CREDENTIAL_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                        // Kubernetes 매니페스트 저장소 체크아웃
+                        sh 'rm -rf manifest-repo'
+                        sh "git clone ${env.MANIFESTS_GITHUB_URL} manifest-repo"
+                        
+                        dir('manifest-repo') {
+                             // Git 사용자 설정
+                            sh "git config user.name '${env.GIT_USERNAME}'"
+                            sh "git config user.email '${env.GIT_EMAIL}'"
+
+                            // Deployment 이미지 태그 업데이트 (armageddon_manifests/backend/deployment.yml)
+                            // Mac/Linux 호환성을 위해 sed -i '' 사용하지 않음 (Jenkins는 보통 Linux)
+                            sh """
+                                sed -i 's|image: ${DOCKER_IMAGE_NAME}:.*|image: ${DOCKER_IMAGE_NAME}:armageddon-backend:${currentBuild.number}|g' armageddon_manifests/backend/deployment.yml
+                            """
+
+                            // 변경사항 커밋 및 푸시
+                            sh """
+                                git add armageddon_manifests/backend/deployment.yml
+                                git commit -m 'Update backend image to ${currentBuild.number} [skip ci]' || echo 'No changes to commit'
+                                git push https://${GIT_USER}:${GIT_TOKEN}@github.com/beyond-team2/project4-devOps-manifests.git main
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                if (isUnix()) {
+                    sh 'docker logout || true'
+                } else {
+                    bat 'docker logout || true'
+                }
+            }
+        }
+        success {
+            withCredentials([string(credentialsId: DISCORD_CREDENTIAL_ID, variable: 'DISCORD')]) {
+                discordSend(
+                    description: """
+                    **Backend 빌드 성공!** :tada:
+
+                    **제목**: ${currentBuild.displayName}
+                    **결과**: :white_check_mark: ${currentBuild.currentResult}
+                    **실행 시간**: ${currentBuild.duration / 1000}s
+                    **링크**: [빌드 결과 보기](${env.BUILD_URL})
+                    """,
+                    title: "${env.JOB_NAME} 빌드 성공!",
+                    webhookURL: "$DISCORD"
+                )
+            }
+        }
+        failure {
+            withCredentials([string(credentialsId: DISCORD_CREDENTIAL_ID, variable: 'DISCORD')]) {
+                 discordSend(
+                    description: """
+                    **Backend 빌드 실패!** :x:
+
+                    **제목**: ${currentBuild.displayName}
+                    **결과**: :x: ${currentBuild.currentResult}
+                    **실행 시간**: ${currentBuild.duration / 1000}s
+                    **링크**: [빌드 결과 보기](${env.BUILD_URL})
+                    """,
+                    title: "${env.JOB_NAME} 빌드 실패!",
+                    webhookURL: "$DISCORD"
+                )
+            }
+        }
+    }
+}
