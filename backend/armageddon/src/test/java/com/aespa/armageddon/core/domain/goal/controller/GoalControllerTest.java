@@ -64,7 +64,6 @@ class GoalControllerTest {
                 .build();
     }
 
-
     @Nested
     @DisplayName("목표 전체 조회 API 테스트")
     class GetGoalsApiTest {
@@ -98,7 +97,6 @@ class GoalControllerTest {
                     .andExpect(jsonPath("$.data[0].goalType").value("SAVING"));
         }
     }
-
 
     @Nested
     @DisplayName("목표 세부정보 조회 API 테스트")
@@ -160,6 +158,7 @@ class GoalControllerTest {
             mockMvc.perform(post("/api/goals/saving")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
+                    .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.result").value("SUCCESS"));
 
@@ -243,6 +242,7 @@ class GoalControllerTest {
 
             // when & then
             mockMvc.perform(delete("/api/goals/{goalId}", goalId))
+                    .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.result").value("SUCCESS"));
 
