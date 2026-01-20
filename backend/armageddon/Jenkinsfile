@@ -16,8 +16,9 @@ pipeline {
             steps {
                 // 소스 코드 체크아웃
                 git branch: 'main',
-                    credentialsId: 'guntinue-git-auth',
-                    url: "${env.SOURCE_GITHUB_URL}"
+
+                credentialsId: 'guntinue-git-auth',
+                url: "${env.SOURCE_GITHUB_URL}"
 
                 // Gradle 권한 부여 및 빌드
                 dir('backend/armageddon') {
@@ -105,14 +106,14 @@ pipeline {
                                     credentialsId: 'guntinue-git-auth'
                                 ]],
                                 extensions: [[$class: 'CleanBeforeCheckout']],
-                                poll: false // 이 저장소는 변경되어도 빌드를 유발하지 않음
+                                poll: false // 중요: 무한 빌드 방지
                             ])
 
-                             // Git 사용자 설정
+                            // Git 사용자 설정
                             sh "git config user.name '${env.GIT_USERNAME}'"
                             sh "git config user.email '${env.GIT_EMAIL}'"
 
-                            // Deployment 이미지 태그 업데이트 (backend/deployment.yml)
+                            // Deployment 이미지 태그 업데이트
                             sh """
                                 sed -i '' 's|image: .*|image: ${DOCKER_USER}/armageddon-backend:${currentBuild.number}|g' backend/deployment.yml
                             """
@@ -120,7 +121,11 @@ pipeline {
                             // 변경사항 커밋 및 푸시
                             sh """
                                 git add backend/deployment.yml
-                                git commit -m 'Update backend image to ${currentBuild.number}' || echo 'No changes to commit'
+                                git commit -m 'Update backend image to ${currentBuild.number} [skip ci]' || echo 'No changes to commit'
+
+                                # 프론트엔드가 먼저 올린 내용이 있을 수 있으므로 당겨오기
+                                git pull origin main --rebase
+
                                 git push https://${GIT_USER}:${GIT_TOKEN}@github.com/beyond-team3/project4-devOps-manifests.git main
                             """
                         }
@@ -128,7 +133,6 @@ pipeline {
                 }
             }
         }
-    }
 
     post {
         always {
