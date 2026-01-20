@@ -28,10 +28,6 @@ pipeline {
             }
         }
 
-
-
-
-
         //stage('Run Tests') {
         //    steps {
         //        dir('backend/armageddon') {
@@ -117,19 +113,24 @@ pipeline {
                             sh "git config user.name '${env.GIT_USERNAME}'"
                             sh "git config user.email '${env.GIT_EMAIL}'"
 
-                            // Deployment 이미지 태그 업데이트
-                            sh """
-                                sed -i '' 's|image: .*|image: ${DOCKER_USER}/armageddon-backend:${currentBuild.number}|g' backend/deployment.yml
-                            """
-
                             // 변경사항 커밋 및 푸시
                             sh """
-                                git add backend/deployment.yml
-                                git commit -m 'Update backend image to ${currentBuild.number} [skip ci]' || echo 'No changes to commit'
+                                # 강제로 로컬 main 브랜치를 최신 원격 main과 맞춤
+                                git checkout -B main origin/main
 
-                                # 프론트엔드가 먼저 올린 내용이 있을 수 있으므로 당겨오기
+                                # Deployment 이미지 태그 업데이트 (여기서 sed 실행)
+                                sed -i '' 's|image: .*|image: ${DOCKER_USER}/armageddon-backend:${currentBuild.number}|g' backend/deployment.yml
+
+                                # 변경사항 스테이징
+                                git add backend/deployment.yml
+
+                                # 커밋
+                                git commit -m 'Update backend image to ${currentBuild.number}' || echo 'No changes to commit'
+
+                                # 최신 내용 당겨오기 (Rebase)
                                 git pull origin main --rebase
 
+                                # 푸시
                                 git push https://${GIT_USER}:${GIT_TOKEN}@github.com/beyond-team3/project4-devOps-manifests.git main
                             """
                         }
