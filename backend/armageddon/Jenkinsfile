@@ -108,7 +108,7 @@ pipeline {
                             // Deployment 이미지 태그 업데이트 (backend/deployment.yml)
                             // Mac/Linux 호환성을 위해 sed -i '' 사용하지 않음 (Jenkins는 보통 Linux)
                             sh """
-                                sed -i '' 's|image: ${DOCKER_USER}/armageddon-backend:${currentBuild.number}|g' backend/deployment.yml
+                                sed -i 's|image: ${DOCKER_USER}/armageddon-backend:${currentBuild.number}|g' backend/deployment.yml
                             """
 
                             // 변경사항 커밋 및 푸시
