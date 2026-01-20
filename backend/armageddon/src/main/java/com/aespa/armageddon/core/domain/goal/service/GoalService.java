@@ -165,10 +165,8 @@ public class GoalService {
                 goal.getTitle(),
                 goal.getTargetAmount(),
                 current,
-                rate,
                 goal.getStatus(),
                 createStatusMessage(goal),
-                goal.getExpenseCategory(),
                 goal.getStartDate(),
                 goal.getEndDate());
     }
