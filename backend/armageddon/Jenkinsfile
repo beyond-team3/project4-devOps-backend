@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+
+    // 사용할 환경 변수 설정
+    environment {
+        // 아까 Jenkins에 등록한 도커 허브 ID
+        DOCKER_CRED = credentials('docker-hub-guntinue')
+        // 이미지 이름
+        IMAGE_NAME = 'guntinue/armageddon-backend'
+    }
+
+    stages {
+        // 코드 가져오기 (Git Clone은 Jenkins가 알아서 함)
+
+        // 자바 빌드 (Gradle)
+        stage('Build Gradle') {
+            steps {
+                // backend 폴더 안에서 명령어를 실행하라는 뜻
+                dir('backend') {
+                    // 실행 권한 부여 후 빌드 (테스트는 시간상 생략, 필요시 -x test 제거)
+                    sh 'chmod +x gradlew'
+                    sh './gradlew clean build -x test'
+                }
+            }
+        }
+
+        // 도커 이미지 만들기
+        stage('Docker Build') {
+            steps {
+                dir('backend') {
+                    // --no-cache: 언제나 깨끗하게 새로 빌드
+                    sh 'docker build --no-cache -t $IMAGE_NAME:latest .'
+                }
+            }
+        }
+
+        // 도커 허브로 보내기 (로그인 -> 푸시)
+        stage('Docker Push') {
+            steps {
+                // 보안을 위해 비밀번호 변수를 이용해 로그인
+                sh 'echo $DOCKER_CRED_PSW | docker login -u $DOCKER_CRED_USR --password-stdin'
+                sh 'docker push $IMAGE_NAME:latest'
+            }
+        }
+
+        // 배포 (쿠버네티스 파드 재시작)
+        // 젠킨스 서버에 kubectl이 설치되어 있다고 가정.
+        stage('Deploy to K8s') {
+            steps {
+                // 파드를 지우면 Deployment가 알아서 새 이미지를 받아와서 다시 띄움
+                // (젠킨스에 kubectl 권한 설정이 필요할 수 있음)
+                sh 'kubectl delete pod -l app=backend --ignore-not-found=true'
+            }
+        }
+    }
+
+    // 빌드 후 처리 (성공/실패 알림 등)
+    post {
+        success {
+            echo '백엔드 배포 성공.'
+        }
+        failure {
+            echo '배포 실패, 로그를 확인하세요.'
+        }
+    }
+}
