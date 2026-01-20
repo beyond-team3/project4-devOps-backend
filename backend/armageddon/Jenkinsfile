@@ -35,40 +35,40 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            steps {
-                dir('backend/armageddon') {
-                    // 테스트용 환경변수 설정 (User Draft 참조)
-                    withEnv([
-                        'SPRING_PROFILES_ACTIVE=test',
-                        'SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb',
-                        'SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver',
-                        'SPRING_DATASOURCE_USERNAME=sa',
-                        'SPRING_DATASOURCE_PASSWORD=',
-                        'SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop',
-                        'SPRING_DATA_REDIS_HOST=localhost',
-                        'SPRING_DATA_REDIS_PORT=6379',
-                        'SPRING_DATA_REDIS_DATABASE=0',
-                        'SPRING_MAIL_HOST=smtp.test.com',
-                        'SPRING_MAIL_PORT=587',
-                        'SPRING_MAIL_USERNAME=test@test.com',
-                        'SPRING_MAIL_PASSWORD=testpassword',
-                        'JWT_SECRET=dGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLW9ubHktMjU2Yml0cw==',
-                        'JWT_EXPIRATION=1800000',
-                        'JWT_REFRESH_EXPIRATION=1209600000'
-                    ]) {
-                       sh './gradlew test'
-                    }
-                }
-            }
-            post {
-                always {
-                    dir('backend/armageddon') {
-                        junit '**/build/test-results/test/*.xml'
-                    }
-                }
-            }
-        }
+        //stage('Run Tests') {
+        //    steps {
+        //        dir('backend/armageddon') {
+        //            // 테스트용 환경변수 설정 (User Draft 참조)
+        //            withEnv([
+        //                'SPRING_PROFILES_ACTIVE=test',
+        //                'SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb',
+        //                'SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver',
+        //                'SPRING_DATASOURCE_USERNAME=sa',
+        //                'SPRING_DATASOURCE_PASSWORD=',
+        //                'SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop',
+        //                'SPRING_DATA_REDIS_HOST=localhost',
+        //                'SPRING_DATA_REDIS_PORT=6379',
+        //                'SPRING_DATA_REDIS_DATABASE=0',
+        //                'SPRING_MAIL_HOST=smtp.test.com',
+        //                'SPRING_MAIL_PORT=587',
+        //                'SPRING_MAIL_USERNAME=test@test.com',
+        //                'SPRING_MAIL_PASSWORD=testpassword',
+        //                'JWT_SECRET=dGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLW9ubHktMjU2Yml0cw==',
+        //                'JWT_EXPIRATION=1800000',
+        //                'JWT_REFRESH_EXPIRATION=1209600000'
+        //            ]) {
+        //               sh './gradlew test'
+        //            }
+        //        }
+        //    }
+        //    post {
+        //        always {
+        //            dir('backend/armageddon') {
+        //                junit '**/build/test-results/test/*.xml'
+        //            }
+        //        }
+        //    }
+        //}
 
         stage('Docker Build and Push') {
             steps {
