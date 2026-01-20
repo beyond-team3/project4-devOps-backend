@@ -9,14 +9,6 @@ pipeline {
         // Git 설정
         GIT_USERNAME = 'guntinue'
         GIT_EMAIL = 'rjssn93@gmail.com'
-
-        // Credential IDs 
-        GIT_CREDENTIAL_ID = 'guntinue-git-auth'
-        DOCKER_CREDENTIAL_ID = 'docker-hub-guntinue'
-        DISCORD_CREDENTIAL_ID = 'armageddon-discord'
-        
-        // Docker 이미지 설정 
-        DOCKER_IMAGE_NAME = 'guntinue/armageddon-backend'
     }
 
     stages {
@@ -24,7 +16,7 @@ pipeline {
             steps {
                 // 소스 코드 체크아웃
                 git branch: 'main',
-                    credentialsId: GIT_CREDENTIAL_ID,
+                    credentialsId: 'guntinue-git-auth',
                     url: "${env.SOURCE_GITHUB_URL}"
 
                 // Gradle 권한 부여 및 빌드
@@ -73,21 +65,21 @@ pipeline {
         stage('Docker Build and Push') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIAL_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-guntinue', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         dir('backend/armageddon') {
                             if (isUnix()) {
-                                sh "docker build -t ${DOCKER_IMAGE_NAME}:${currentBuild.number} ."
-                                sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
+                                sh "docker build -t ${DOCKER_USER}/armageddon-backend:${currentBuild.number} ."
+                                sh "docker build -t ${DOCKER_USER}/armageddon-backend:latest ."
                                 sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
-                                sh "docker push ${DOCKER_IMAGE_NAME}:${currentBuild.number}"
-                                sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                                sh "docker push ${DOCKER_USER}/armageddon-backend:${currentBuild.number}"
+                                sh "docker push ${DOCKER_USER}/armageddon-backend:latest"
                                 sh "docker logout"
                             } else {
-                                bat "docker build -t ${DOCKER_IMAGE_NAME}:${currentBuild.number} ."
-                                bat "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
+                                bat "docker build -t ${DOCKER_USER}/armageddon-backend:${currentBuild.number} ."
+                                bat "docker build -t ${DOCKER_USER}/armageddon-backend:latest ."
                                 bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
-                                bat "docker push ${DOCKER_IMAGE_NAME}:${currentBuild.number}"
-                                bat "docker push ${DOCKER_IMAGE_NAME}:latest"
+                                bat "docker push ${DOCKER_USER}/armageddon-backend:${currentBuild.number}"
+                                bat "docker push ${DOCKER_USER}/armageddon-backend:latest"
                                 bat "docker logout"
                             }
                         }
@@ -99,12 +91,16 @@ pipeline {
         stage('K8S Manifest Update') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: GIT_CREDENTIAL_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                    withCredentials([
+                        usernamePassword(credentialsId: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
+                        usernamePassword(credentialsId: 'guntinue-git-auth', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')
+                    ]) {
                         // Kubernetes 매니페스트 저장소 체크아웃
-                        sh 'rm -rf manifest-repo'
-                        sh "git clone ${env.MANIFESTS_GITHUB_URL} manifest-repo"
-                        
-                        dir('manifest-repo') {
+                        dir('backend') {
+                            git branch: 'main',
+                            credentialsId: 'guntinue-git-auth',
+                            url: "${env.MANIFESTS_GITHUB_URL}"
+
                              // Git 사용자 설정
                             sh "git config user.name '${env.GIT_USERNAME}'"
                             sh "git config user.email '${env.GIT_EMAIL}'"
@@ -112,14 +108,13 @@ pipeline {
                             // Deployment 이미지 태그 업데이트 (backend/deployment.yml)
                             // Mac/Linux 호환성을 위해 sed -i '' 사용하지 않음 (Jenkins는 보통 Linux)
                             sh """
-                                sed -i '' 's|image: ${DOCKER_IMAGE_NAME}:.*|image: ${DOCKER_IMAGE_NAME}:${currentBuild.number}|g' backend/deployment.yml
+                                sed -i '' 's|image: ${DOCKER_USER}/armageddon-backend:${currentBuild.number}|g' backend/deployment.yml
                             """
 
                             // 변경사항 커밋 및 푸시
                             sh """
                                 git add backend/deployment.yml
                                 git commit -m 'Update backend image to ${currentBuild.number} [skip ci]' || echo 'No changes to commit'
-                                git pull origin main --rebase
                                 git push https://github.com/beyond-team3/project4-devOps-backend.git main
                             """
                         }
@@ -127,7 +122,19 @@ pipeline {
                 }
             }
         }
+        stage('Deploy to Kubernetes') {
+            steps {
+                dir('frontend') {
+                    // ConfigMap, Deployment, Service 적용
+                    sh 'kubectl apply -f frontend/deployment.yml'
+
+                    // Deployment 재시작 (이미지 업데이트 반영)
+                    sh 'kubectl rollout restart deployment/frontend-deployment'
+                }
+            }
+        }
     }
+
 
     post {
         always {
