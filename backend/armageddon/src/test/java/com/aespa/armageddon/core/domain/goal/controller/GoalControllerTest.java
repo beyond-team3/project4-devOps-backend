@@ -229,8 +229,15 @@ class GoalControllerTest {
         // given
         String token = "Bearer testToken";
 
+            // when & then
+            mockMvc.perform(delete("/api/goals/{goalId}", goalId))
+                    .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.result").value("SUCCESS"));
+
         given(jwtTokenProvider.getUserIdFromJWT(anyString())).willReturn(1L);
         doNothing().when(goalService).deleteGoal(anyLong(), anyLong());
+
 
         // when & then
         mockMvc.perform(delete("/api/goals/{goalId}", 1L)
