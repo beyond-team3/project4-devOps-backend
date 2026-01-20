@@ -155,9 +155,8 @@ class GoalControllerTest {
 
             // when & then
             mockMvc.perform(post("/api/goals/saving")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                    .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.result").value("SUCCESS"));
 
@@ -187,8 +186,8 @@ class GoalControllerTest {
 
             // when & then
             mockMvc.perform(post("/api/goals/expense")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.result").value("SUCCESS"));
 
@@ -218,8 +217,8 @@ class GoalControllerTest {
 
             // when & then
             mockMvc.perform(put("/api/goals/{goalId}", goalId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.result").value("SUCCESS"));
 
@@ -241,7 +240,6 @@ class GoalControllerTest {
 
             // when & then
             mockMvc.perform(delete("/api/goals/{goalId}", goalId))
-                    .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.result").value("SUCCESS"));
 
