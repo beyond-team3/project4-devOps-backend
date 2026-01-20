@@ -114,7 +114,7 @@ pipeline {
 
                             // Deployment 이미지 태그 업데이트 (backend/deployment.yml)
                             sh """
-                                sed -i '' 's|image: .*|image: ${DOCKER_USER}/armageddon-frontend:${currentBuild.number}|g' backend/deployment.yml
+                                sed -i '' 's|image: .*|image: ${DOCKER_USER}/armageddon-backend:${currentBuild.number}|g' backend/deployment.yml
                             """
 
                             // 변경사항 커밋 및 푸시
@@ -125,17 +125,6 @@ pipeline {
                             """
                         }
                     }
-                }
-            }
-        }
-        stage('Deploy to Kubernetes') {
-            steps {
-                dir('backend/armageddon') {
-                    // ConfigMap, Deployment, Service 적용
-                    sh 'kubectl apply -f backend/deployment.yml'
-
-                    // Deployment 재시작 (이미지 업데이트 반영)
-                    sh 'kubectl rollout restart deployment/backend-deployment'
                 }
             }
         }
